@@ -1,0 +1,8 @@
+/usr/bin/ld: /home/mpais/ns-allinone-3.43/ns-3.43/build/lib/libns3.43-mesh-default.so: undefined reference to `ns3::dot11s::LruGroupSeqNo::CheckSeen(unsigned int)'
+/usr/bin/ld: /home/mpais/ns-allinone-3.43/ns-3.43/build/lib/libns3.43-mesh-default.so: undefined reference to `ns3::dot11s::LruGroupSeqNo::LruGroupSeqNo()'
+/usr/bin/ld: /home/mpais/ns-allinone-3.43/ns-3.43/build/lib/libns3.43-mesh-default.so: undefined reference to `ns3::dot11s::LruGroupSeqNo::GetTypeId()'
+collect2: error: ld returned 1 exit status
+gmake[3]: *** [scratch/CMakeFiles/scratch_mesh.dir/build.make:97: /home/mpais/ns-allinone-3.43/ns-3.43/build/scratch/ns3.43-mesh-default] Error 1
+gmake[2]: *** [CMakeFiles/Makefile2:15878: scratch/CMakeFiles/scratch_mesh.dir/all] Error 2
+gmake[1]: *** [CMakeFiles/Makefile2:15884: scratch/CMakeFiles/scratch_mesh.dir/rule] Error 2
+gmake: *** [Makefile:5422: scratch_mesh] Error 2
