@@ -82,10 +82,7 @@ HwmpProtocolMac::ReceiveData(Ptr<Packet> packet, const WifiMacHeader& header)
     tag.SetSeqno(meshHdr.GetMeshSeqno());
     tag.SetTtl(meshHdr.GetMeshTtl());
     packet->AddPacketTag(tag);
-    Mac48Address node0 = Mac48Address("00:00:00:00:00:01");
-    NS_LOG_DEBUG("CURRENT NODE: " << m_protocol->GetAddress() << " DESTINO PACOTE: " << destination
-                                  << " SOURCE PACOTE: " << source);
-
+    
     if (((destination.IsGroup()) && (m_protocol->DropDataFrame(meshHdr.GetMeshSeqno(), source))))
     {
         NS_LOG_DEBUG("Dropping frame; source " << source << " dest " << destination << " seqno "

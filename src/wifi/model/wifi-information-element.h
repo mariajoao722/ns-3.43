@@ -216,7 +216,7 @@ typedef uint8_t WifiInformationElementId;
 #define IE_FRAGMENT ((WifiInformationElementId)242)
 // 243 to 254 are reserved
 #define IE_EXTENSION ((WifiInformationElementId)255)
-#define IE_PRUNE ((WifiInformationElementId)256) //NEW
+#define IE_PRUNE ((WifiInformationElementId)256) // NEW
 
 #define IE_EXT_HE_CAPABILITIES ((WifiInformationElementId)35)
 #define IE_EXT_HE_OPERATION ((WifiInformationElementId)36)

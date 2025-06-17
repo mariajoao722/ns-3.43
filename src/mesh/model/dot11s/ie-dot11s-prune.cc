@@ -8,7 +8,6 @@ namespace ns3
 {
 namespace dot11s
 {
-
 NS_LOG_COMPONENT_DEFINE("IePrune");
 
 IePrune::IePrune()

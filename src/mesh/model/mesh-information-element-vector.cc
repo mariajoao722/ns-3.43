@@ -24,7 +24,7 @@
 #include "ns3/ie-dot11s-preq.h"
 #include "ns3/ie-dot11s-rann.h"
 
-#include "ns3/ie-dot11s-prune.h" //NEW
+#include "ns3/ie-dot11s-prune.h" // NEW
 
 namespace ns3
 {

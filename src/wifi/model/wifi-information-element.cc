@@ -24,7 +24,7 @@ uint16_t
 WifiInformationElement::GetSerializedSize() const
 {
     uint16_t size = GetInformationFieldSize();
-//MUDEI DE 255 PARA 256 TUDO ONDE TINHA 255
+// MUDEI DE 255 PARA 256 TUDO ONDE TINHA 255
     if (size <= 256) // size includes the Element ID Extension field
     {
         return (2 + size);
