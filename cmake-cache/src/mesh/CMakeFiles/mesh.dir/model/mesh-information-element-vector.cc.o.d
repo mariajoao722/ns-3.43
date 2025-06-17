@@ -621,4 +621,6 @@ src/mesh/CMakeFiles/mesh.dir/model/mesh-information-element-vector.cc.o: \
  /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/ie-dot11s-preq.h \
  /home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/dot11s/ie-dot11s-preq.h \
  /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/ie-dot11s-rann.h \
- /home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/dot11s/ie-dot11s-rann.h
+ /home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/dot11s/ie-dot11s-rann.h \
+ /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/ie-dot11s-prune.h \
+ /home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/dot11s/ie-dot11s-prune.h

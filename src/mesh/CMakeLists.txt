@@ -35,6 +35,8 @@ build_lib(
     model/mesh-wifi-beacon.cc
     model/mesh-wifi-interface-mac.cc
     model/dot11s/lru-group-seqno.cc
+    model/dot11s/ie-dot11s-prune.cc
+    
   HEADER_FILES
     helper/dot11s/dot11s-installer.h
     helper/flame/flame-installer.h
@@ -67,6 +69,7 @@ build_lib(
     model/mesh-wifi-interface-mac-plugin.h
     model/mesh-wifi-interface-mac.h
     model/dot11s/lru-group-seqno.h
+    model/dot11s/ie-dot11s-prune.h
   LIBRARIES_TO_LINK ${libwifi}
                     ${libapplications}
   TEST_SOURCES

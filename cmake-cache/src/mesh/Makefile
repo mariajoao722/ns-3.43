@@ -646,6 +646,30 @@ model/dot11s/ie-dot11s-preq.cc.s:
 	cd /home/mpais/ns-allinone-3.43/ns-3.43/cmake-cache && $(MAKE) $(MAKESILENT) -f src/mesh/CMakeFiles/mesh.dir/build.make src/mesh/CMakeFiles/mesh.dir/model/dot11s/ie-dot11s-preq.cc.s
 .PHONY : model/dot11s/ie-dot11s-preq.cc.s
 
+model/dot11s/ie-dot11s-prune.o: model/dot11s/ie-dot11s-prune.cc.o
+.PHONY : model/dot11s/ie-dot11s-prune.o
+
+# target to build an object file
+model/dot11s/ie-dot11s-prune.cc.o:
+	cd /home/mpais/ns-allinone-3.43/ns-3.43/cmake-cache && $(MAKE) $(MAKESILENT) -f src/mesh/CMakeFiles/mesh.dir/build.make src/mesh/CMakeFiles/mesh.dir/model/dot11s/ie-dot11s-prune.cc.o
+.PHONY : model/dot11s/ie-dot11s-prune.cc.o
+
+model/dot11s/ie-dot11s-prune.i: model/dot11s/ie-dot11s-prune.cc.i
+.PHONY : model/dot11s/ie-dot11s-prune.i
+
+# target to preprocess a source file
+model/dot11s/ie-dot11s-prune.cc.i:
+	cd /home/mpais/ns-allinone-3.43/ns-3.43/cmake-cache && $(MAKE) $(MAKESILENT) -f src/mesh/CMakeFiles/mesh.dir/build.make src/mesh/CMakeFiles/mesh.dir/model/dot11s/ie-dot11s-prune.cc.i
+.PHONY : model/dot11s/ie-dot11s-prune.cc.i
+
+model/dot11s/ie-dot11s-prune.s: model/dot11s/ie-dot11s-prune.cc.s
+.PHONY : model/dot11s/ie-dot11s-prune.s
+
+# target to generate assembly for a file
+model/dot11s/ie-dot11s-prune.cc.s:
+	cd /home/mpais/ns-allinone-3.43/ns-3.43/cmake-cache && $(MAKE) $(MAKESILENT) -f src/mesh/CMakeFiles/mesh.dir/build.make src/mesh/CMakeFiles/mesh.dir/model/dot11s/ie-dot11s-prune.cc.s
+.PHONY : model/dot11s/ie-dot11s-prune.cc.s
+
 model/dot11s/ie-dot11s-rann.o: model/dot11s/ie-dot11s-rann.cc.o
 .PHONY : model/dot11s/ie-dot11s-rann.o
 
@@ -1341,6 +1365,9 @@ help:
 	@echo "... model/dot11s/ie-dot11s-preq.o"
 	@echo "... model/dot11s/ie-dot11s-preq.i"
 	@echo "... model/dot11s/ie-dot11s-preq.s"
+	@echo "... model/dot11s/ie-dot11s-prune.o"
+	@echo "... model/dot11s/ie-dot11s-prune.i"
+	@echo "... model/dot11s/ie-dot11s-prune.s"
 	@echo "... model/dot11s/ie-dot11s-rann.o"
 	@echo "... model/dot11s/ie-dot11s-rann.i"
 	@echo "... model/dot11s/ie-dot11s-rann.s"

@@ -4861,6 +4861,12 @@
 },
 {
   "directory": "/home/mpais/ns-allinone-3.43/ns-3.43/cmake-cache/src/mesh",
+  "command": "/usr/bin/c++ -DNS3_ASSERT_ENABLE -DNS3_BUILD_PROFILE_DEBUG -DNS3_LOG_ENABLE -DPROJECT_SOURCE_PATH=\\\"/home/mpais/ns-allinone-3.43/ns-3.43\\\" -D__LINUX__ -Dmesh_EXPORTS -I/home/mpais/ns-allinone-3.43/ns-3.43/build/include -Os -g -DNDEBUG -std=c++20 -fPIC   -fno-semantic-interposition -fdiagnostics-color=always -Wall -Wpedantic -o CMakeFiles/mesh.dir/model/dot11s/ie-dot11s-prune.cc.o -c /home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/dot11s/ie-dot11s-prune.cc",
+  "file": "/home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/dot11s/ie-dot11s-prune.cc",
+  "output": "src/mesh/CMakeFiles/mesh.dir/model/dot11s/ie-dot11s-prune.cc.o"
+},
+{
+  "directory": "/home/mpais/ns-allinone-3.43/ns-3.43/cmake-cache/src/mesh",
   "command": "/usr/bin/c++ -DNS3_ASSERT_ENABLE -DNS3_BUILD_PROFILE_DEBUG -DNS3_LOG_ENABLE -DNS_TEST_SOURCEDIR=\\\"src/mesh/test\\\" -DPROJECT_SOURCE_PATH=\\\"/home/mpais/ns-allinone-3.43/ns-3.43\\\" -D__LINUX__ -Dmesh_test_EXPORTS -I/home/mpais/ns-allinone-3.43/ns-3.43/build/include -Os -g -DNDEBUG -std=c++20 -fPIC   -fno-semantic-interposition -fdiagnostics-color=always -Wall -Wpedantic -o CMakeFiles/mesh-test.dir/test/dot11s/dot11s-test-suite.cc.o -c /home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/test/dot11s/dot11s-test-suite.cc",
   "file": "/home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/test/dot11s/dot11s-test-suite.cc",
   "output": "src/mesh/CMakeFiles/mesh-test.dir/test/dot11s/dot11s-test-suite.cc.o"

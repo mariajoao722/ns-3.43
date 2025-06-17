@@ -1127,6 +1127,8 @@ scratch/CMakeFiles/scratch_mesh.dir/mesh.cc.o: \
  /home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/mesh-wifi-interface-mac-plugin.h \
  /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/lru-group-seqno.h \
  /home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/dot11s/lru-group-seqno.h \
+ /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/ie-dot11s-prune.h \
+ /home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/dot11s/ie-dot11s-prune.h \
  /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/mobility-module.h \
  /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/group-mobility-helper.h \
  /home/mpais/ns-allinone-3.43/ns-3.43/src/mobility/helper/group-mobility-helper.h \

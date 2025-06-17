@@ -98,6 +98,7 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
     "/home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/mesh-wifi-interface-mac-plugin.h"
     "/home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/mesh-wifi-interface-mac.h"
     "/home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/dot11s/lru-group-seqno.h"
+    "/home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/dot11s/ie-dot11s-prune.h"
     "/home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/mesh-module.h"
     )
 endif()

@@ -39,6 +39,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/mesh.dir/model/dot11s/ie-dot11s-prep.cc.o.d"
   "CMakeFiles/mesh.dir/model/dot11s/ie-dot11s-preq.cc.o"
   "CMakeFiles/mesh.dir/model/dot11s/ie-dot11s-preq.cc.o.d"
+  "CMakeFiles/mesh.dir/model/dot11s/ie-dot11s-prune.cc.o"
+  "CMakeFiles/mesh.dir/model/dot11s/ie-dot11s-prune.cc.o.d"
   "CMakeFiles/mesh.dir/model/dot11s/ie-dot11s-rann.cc.o"
   "CMakeFiles/mesh.dir/model/dot11s/ie-dot11s-rann.cc.o.d"
   "CMakeFiles/mesh.dir/model/dot11s/lru-group-seqno.cc.o"
