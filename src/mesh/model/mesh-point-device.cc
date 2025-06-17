@@ -115,7 +115,7 @@ MeshPointDevice::ReceiveFromDevice(Ptr<NetDevice> incomingPort,
                                                   realProtocol))
         {
             m_rxCallback(this, packet_copy, realProtocol, src);
-            volatile Mac48Address source= src48;
+             volatile Mac48Address source= src48;
             m_rxStats.broadcastData++;
             m_rxStats.broadcastDataBytes += packet->GetSize();
             Time forwardingDelay = GetForwardingDelay();
@@ -300,8 +300,8 @@ MeshPointDevice::Send(Ptr<Packet> packet, const Address& dest, uint16_t protocol
 {
     NS_LOG_FUNCTION(this);
     const Mac48Address dst48 = Mac48Address::ConvertFrom(dest);
-    volatile Mac48Address src48 = m_address;
-    volatile uint16_t protocol = protocolNumber;
+     volatile Mac48Address src48 = m_address;
+     volatile uint16_t protocol = protocolNumber;
     return m_routingProtocol->RequestRoute(m_ifIndex,
                                            m_address,
                                            dst48,

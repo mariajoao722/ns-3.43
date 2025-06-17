@@ -209,8 +209,8 @@ MeshWifiInterfaceMac::Enqueue(Ptr<WifiMpdu> mpdu, Mac48Address to, Mac48Address 
     hdr.SetAddr3(to);
     hdr.SetAddr4(from);
     Mac48Address tempAddr = hdr.GetAddr4();
-    volatile bool isEqual = (tempAddr == Mac48Address("00:00:00:00:00:01"));
-    volatile Mac48Address addr2 = hdr.GetAddr2();
+      volatile bool isEqual = (tempAddr == Mac48Address("00:00:00:00:00:01"));
+      volatile Mac48Address addr2 = hdr.GetAddr2();
     NS_LOG_DEBUG("IsEqual: " << isEqual);
     hdr.SetDsFrom();
     hdr.SetDsTo();

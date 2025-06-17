@@ -563,7 +563,7 @@ WifiNetDevice::SendFrom(Ptr<Packet> packet,
                         uint16_t protocolNumber)
 {
     NS_LOG_FUNCTION(this << packet << source << dest << protocolNumber);
-   volatile Mac48Address macSrc = Mac48Address::ConvertFrom(source);
+    volatile Mac48Address macSrc = Mac48Address::ConvertFrom(source);
 
     return DoSend(packet, source, dest, protocolNumber);
 }

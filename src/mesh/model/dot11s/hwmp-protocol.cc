@@ -721,7 +721,7 @@ HwmpProtocol::RequestRoute(uint32_t sourceIface,
                 NS_LOG_DEBUG("AQUIIIIIIIIIIIIIIII");
                 NS_LOG_INFO("Forwarding multicast packet from node " << GetAddress()
                                                                      << " to receiver " << address);
-                volatile Mac48Address src48 = source;
+                 volatile Mac48Address src48 = source;
                 routeReply(true, packetCopy, source, destination, protocolType, plugin->first);
             }
         }

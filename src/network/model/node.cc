@@ -280,7 +280,7 @@ Node::PromiscReceiveFromDevice(Ptr<NetDevice> device,
                                NetDevice::PacketType packetType)
 {
     NS_LOG_FUNCTION(this << device << packet << protocol << &from << &to << packetType);
-    volatile Mac48Address src48= Mac48Address::ConvertFrom(from);
+     volatile Mac48Address src48= Mac48Address::ConvertFrom(from);
     return ReceiveFromDevice(device, packet, protocol, from, to, packetType, true);
 }
 
