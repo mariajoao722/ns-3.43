@@ -13,6 +13,7 @@
 #include "ie-dot11s-perr.h"
 #include "ie-dot11s-prep.h"
 #include "ie-dot11s-preq.h"
+#include "ie-dot11s-prune.h"
 #include "ie-dot11s-rann.h"
 
 #include "ns3/log.h"
@@ -82,7 +83,7 @@ HwmpProtocolMac::ReceiveData(Ptr<Packet> packet, const WifiMacHeader& header)
     tag.SetSeqno(meshHdr.GetMeshSeqno());
     tag.SetTtl(meshHdr.GetMeshTtl());
     packet->AddPacketTag(tag);
-    
+
     if (((destination.IsGroup()) && (m_protocol->DropDataFrame(meshHdr.GetMeshSeqno(), source))))
     {
         NS_LOG_DEBUG("Dropping frame; source " << source << " dest " << destination << " seqno "
@@ -163,6 +164,17 @@ HwmpProtocolMac::ReceiveAction(Ptr<Packet> packet, const WifiMacHeader& header)
             {
                 failedDestinations.push_back(*i);
             }
+        }
+        if ((*i)->ElementId() == IE_PRUNE)
+        {
+            Ptr<IePrune> prune = DynamicCast<IePrune>(*i);
+            NS_ASSERT(prune);
+            m_stats.rxPrune++; // Adiciona esse campo à tua estrutura de estatísticas
+
+            m_protocol->ReceivePrune(prune->GetPruneUnits(),
+                             header.GetAddr2(),
+                             m_ifIndex,
+                             header.GetAddr3());
         }
     }
     if (!failedDestinations.empty())
@@ -346,6 +358,30 @@ HwmpProtocolMac::SendPrep(IePrep prep, Mac48Address receiver)
     hdr.SetAddr3(m_protocol->GetAddress());
     // Send Management frame
     m_stats.txPrep++;
+    m_stats.txMgt++;
+    m_stats.txMgtBytes += packet->GetSize();
+    m_parent->SendManagementFrame(packet, hdr);
+}
+
+void HwmpProtocolMac::SendPrune(IePrune prune, Mac48Address receiver)
+{
+    NS_LOG_FUNCTION(this << receiver);
+    // Create packet
+    Ptr<Packet> packet = Create<Packet>();
+    MeshInformationElementVector elements;
+    elements.AddInformationElement(Ptr<IePrune>(&prune));
+    packet->AddHeader(elements);
+    packet->AddHeader(GetWifiActionHeader());
+    // create 802.11 header:
+    WifiMacHeader hdr;
+    hdr.SetType(WIFI_MAC_MGT_ACTION);
+    hdr.SetDsNotFrom();
+    hdr.SetDsNotTo();
+    hdr.SetAddr1(receiver);
+    hdr.SetAddr2(m_parent->GetAddress());
+    hdr.SetAddr3(m_protocol->GetAddress());
+    // Send Management frame
+    m_stats.txPrune++;
     m_stats.txMgt++;
     m_stats.txMgtBytes += packet->GetSize();
     m_parent->SendManagementFrame(packet, hdr);

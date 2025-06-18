@@ -11,6 +11,8 @@ namespace dot11s
 NS_LOG_COMPONENT_DEFINE("IePrune");
 
 IePrune::IePrune()
+    : m_interface(0),
+      m_ttl(0)
 {
 }
 
@@ -40,10 +42,52 @@ IePrune::AddPruneUnit(Mac48Address destination, uint32_t reasonCode)
     m_pruneUnits.emplace_back(destination, reasonCode);
 }
 
+void
+IePrune::SetEntries (const std::vector<std::pair<Mac48Address, uint32_t>> &entries)
+{
+  m_pruneUnits = entries;
+}
+
 std::vector<std::pair<Mac48Address, uint32_t>>
 IePrune::GetPruneUnits() const
 {
     return m_pruneUnits;
+}
+
+void
+IePrune::SetReceiver (Mac48Address receiver)
+{
+  m_receiver = receiver;
+}
+
+Mac48Address
+IePrune::GetReceiver () const
+{
+  return m_receiver;
+}
+
+void
+IePrune::SetInterface (uint32_t interface)
+{
+  m_interface = interface;
+}
+
+uint32_t
+IePrune::GetInterface () const
+{
+  return m_interface;
+}
+
+void
+IePrune::SetTtl (uint8_t ttl)
+{
+  m_ttl = ttl;
+}
+
+uint8_t
+IePrune::GetTtl () const
+{
+  return m_ttl;
 }
 
 void

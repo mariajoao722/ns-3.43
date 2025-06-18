@@ -15,6 +15,7 @@
 #include "ie-dot11s-perr.h"
 #include "ie-dot11s-prep.h"
 #include "ie-dot11s-preq.h"
+#include "ie-dot11s-prune.h"
 #include "peer-management-protocol.h" //new
 
 #include "ns3/log.h"
@@ -721,7 +722,7 @@ HwmpProtocol::RequestRoute(uint32_t sourceIface,
                 NS_LOG_DEBUG("AQUIIIIIIIIIIIIIIII");
                 NS_LOG_INFO("Forwarding multicast packet from node " << GetAddress()
                                                                      << " to receiver " << address);
-                 volatile Mac48Address src48 = source;
+                volatile Mac48Address src48 = source;
                 routeReply(true, packetCopy, source, destination, protocolType, plugin->first);
             }
         }
@@ -1178,6 +1179,27 @@ HwmpProtocol::ReceivePerr(std::vector<FailedDestination> destinations,
     ForwardPathError(MakePathError(retval));
 }
 
+// new
+void
+HwmpProtocol::ReceivePrune(const std::vector<std::pair<Mac48Address, uint32_t>>& pruneUnits,
+                           Mac48Address from,
+                           uint32_t interface,
+                           Mac48Address fromMp)
+{
+    NS_LOG_FUNCTION(this << from << interface << fromMp);
+    // Acceptance criteria:
+    NS_LOG_DEBUG("I am " << GetAddress() << ", received PRUNE from " << from);
+    for (const auto& entry : pruneUnits)
+    {
+        Mac48Address destination = entry.first;
+        uint32_t reason = entry.second;
+
+        NS_LOG_INFO("Received PRUNE for destination " << destination << " with reason " << reason);
+
+        AddPruneEntry(from, destination);
+    }
+}
+
 void
 HwmpProtocol::SendPrep(Mac48Address src,
                        Mac48Address dst,
@@ -1203,6 +1225,25 @@ HwmpProtocol::SendPrep(Mac48Address src,
     m_stats.initiatedPrep++;
 }
 
+//New
+void
+HwmpProtocol::SendPrune (std::vector<std::pair<Mac48Address, uint32_t>>& entries,
+                   Mac48Address receiver,
+                   uint32_t interface,
+                   uint8_t ttl)
+{
+    NS_LOG_FUNCTION(this << entries << receiver << interface << ttl);
+    NS_LOG_DEBUG("I am " << GetAddress());
+    IePrune prune;
+    prune.SetEntries(entries);
+    prune.SetReceiver(receiver);
+    prune.SetInterface(interface);
+    prune.SetTtl(ttl);
+    auto prune_sender = m_interfaces.find(interface);
+    NS_ASSERT(prune_sender != m_interfaces.end());
+    prune_sender->second->SendPrune(prune, receiver);
+}
+//end
 bool
 HwmpProtocol::Install(Ptr<MeshPointDevice> mp)
 {
@@ -1270,13 +1311,14 @@ HwmpProtocol::DropDataFrame(uint32_t seqno, Mac48Address source)
         return true;
     }
     const auto i = m_lastDataSeqno.find(source);
-    //std::map<Mac48Address, Ptr<LruGroupSeqNo>, std::less<Mac48Address>>::const_iterator i = m_lastDataSeqno.find(source);
+    // std::map<Mac48Address, Ptr<LruGroupSeqNo>, std::less<Mac48Address>>::const_iterator i =
+    // m_lastDataSeqno.find(source);
     if (i == m_lastDataSeqno.end())
     {
         m_lastDataSeqno[source] = seqno;
-        //m_lastDataSeqno[source] = CreateObject<LruGroupSeqNo>();
+        // m_lastDataSeqno[source] = CreateObject<LruGroupSeqNo>();
     }
-     else
+    else
     {
         if ((int32_t)(i->second - seqno) >= 0)
         {
@@ -1284,10 +1326,9 @@ HwmpProtocol::DropDataFrame(uint32_t seqno, Mac48Address source)
             return true;
         }
         m_lastDataSeqno[source] = seqno;
-    } 
-    return false; 
-    //return m_lastDataSeqno[source]->CheckSeen(seqno);
-    
+    }
+    return false;
+    // return m_lastDataSeqno[source]->CheckSeen(seqno);
 }
 
 HwmpProtocol::PathError

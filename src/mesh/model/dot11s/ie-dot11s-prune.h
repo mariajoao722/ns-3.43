@@ -31,10 +31,32 @@ class IePrune : public WifiInformationElement
      */
     void AddPruneUnit(Mac48Address destination, uint32_t reasonCode);
     /**
+     * \brief Set all prune entries at once
+     */
+    void SetEntries(const std::vector<std::pair<Mac48Address, uint32_t>>& entries);
+
+    /**
      * \brief Get all destination/reason pairs contained in this PRUNE element
      * \returns vector of (Mac48Address, reasonCode)
      */
     std::vector<std::pair<Mac48Address, uint32_t>> GetPruneUnits() const;
+    /**
+     * \brief Set the intended receiver MAC address
+     */
+    void SetReceiver(Mac48Address receiver);
+    Mac48Address GetReceiver() const;
+
+    /**
+     * \brief Set the interface index this PRUNE is sent from
+     */
+    void SetInterface(uint32_t interface);
+    uint32_t GetInterface() const;
+
+    /**
+     * \brief Set the TTL for this PRUNE message
+     */
+    void SetTtl(uint8_t ttl);
+    uint8_t GetTtl() const;
 
     // Inherited from WifiInformationElement
     WifiInformationElementId ElementId() const override;
@@ -46,6 +68,9 @@ class IePrune : public WifiInformationElement
   private:
     // List of pruned destinations and their reason codes
     std::vector<std::pair<Mac48Address, uint32_t>> m_pruneUnits;
+    Mac48Address m_receiver; //!< Receiver of the PRUNE message
+    uint32_t m_interface;    //!< Interface index used to send PRUNE
+    uint8_t m_ttl;           //!< TTL value of PRUNE message
 };
 } // namespace dot11s
 } // namespace ns3

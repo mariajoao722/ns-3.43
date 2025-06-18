@@ -51,7 +51,7 @@ class HwmpProtocolMac : public MeshWifiInterfaceMacPlugin
                               Mac48Address from,
                               Mac48Address to) override;
     // Update beacon is empty, because HWMP does not know anything about beacons
-    void UpdateBeacon(MeshWifiBeacon& beacon) const override{};
+    void UpdateBeacon(MeshWifiBeacon& beacon) const override {};
     int64_t AssignStreams(int64_t stream) override;
 
   private:
@@ -68,6 +68,7 @@ class HwmpProtocolMac : public MeshWifiInterfaceMacPlugin
      * \param preq the PREQ
      */
     void SendPreq(IePreq preq);
+
     /**
      * Send PREQ function for vector of PREQ
      * \param preq vector of PREQ information elements
@@ -79,6 +80,14 @@ class HwmpProtocolMac : public MeshWifiInterfaceMacPlugin
      * \param receiver the MAC address of the receiver
      */
     void SendPrep(IePrep prep, Mac48Address receiver);
+//new
+    /**
+     * Send PRUNE function
+     * \param prune the PRUNE information element
+     * \param receiver the MAC address of the receiver
+     */
+    void SendPrune(IePrune prune, Mac48Address receiver);
+    //end
     /**
      * Forward a path error
      * \param destinations vector of failed destinations
@@ -174,6 +183,8 @@ class HwmpProtocolMac : public MeshWifiInterfaceMacPlugin
         uint32_t txDataBytes; ///< transmit data bytes
         uint16_t rxData;      ///< receive data
         uint32_t rxDataBytes; ///< receive data bytes
+        uint16_t txPrune;     ///< transmit prune
+        uint16_t rxPrune;     ///< receive prune
         /**
          * Print function
          * \param os the output stream

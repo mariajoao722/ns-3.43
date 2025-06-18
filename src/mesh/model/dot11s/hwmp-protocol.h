@@ -9,6 +9,8 @@
 #ifndef HWMP_PROTOCOL_H
 #define HWMP_PROTOCOL_H
 
+#include "lru-group-seqno.h"
+
 #include "ns3/core-module.h" // for Time, EventId
 #include "ns3/event-id.h"
 #include "ns3/mac48-address.h" // for Mac48Address
@@ -17,8 +19,6 @@
 #include "ns3/peer-link.h"
 #include "ns3/peer-management-protocol.h" // defines PeerManagementProtocol & PeerLink
 #include "ns3/traced-value.h"
-
-#include "lru-group-seqno.h"
 
 #include <map>
 #include <set>
@@ -235,8 +235,6 @@ class HwmpProtocol : public MeshL2RoutingProtocol
     /// Start a periodic check every `interval` seconds
     void StartLinkMonitor(Time interval);
 
-    
-
     void SetMulticasGroupNodes(Mac48Address multicastGroupNodes);
     // accessor for everyone
     static const std::set<Mac48Address>& GetMulticastGroupNodes();
@@ -369,6 +367,22 @@ class HwmpProtocol : public MeshL2RoutingProtocol
                      Mac48Address from,
                      uint32_t interface,
                      Mac48Address fromMp);
+
+    // New
+    /**
+     * \brief Handler for receiving Prune
+     *
+     * \param pruneUnits the list of prune units
+     * \param from the from address
+     * \param interface the interface
+     * \param fromMp the from MP address
+     */
+    void ReceivePrune(const std::vector<std::pair<Mac48Address, uint32_t>>& pruneUnits,
+                      Mac48Address from,
+                      uint32_t interface,
+                      Mac48Address fromMp);
+    // end
+
     /**
      * \brief Send Path Reply
      * \param src the source address
@@ -388,6 +402,13 @@ class HwmpProtocol : public MeshL2RoutingProtocol
                   uint32_t destinationSN,
                   uint32_t lifetime,
                   uint32_t interface);
+
+    // New
+    void SendPrune(std::vector<std::pair<Mac48Address, uint32_t>>& entries,
+                   Mac48Address receiver,
+                   uint32_t interface,
+                   uint8_t ttl = 1);
+    // end
     /**
      * \brief forms a path error information element when list of destination fails on a given
      * interface \attention removes all entries from routing table!
@@ -585,7 +606,7 @@ class HwmpProtocol : public MeshL2RoutingProtocol
     ///@{
     /// Data sequence number database
     std::map<Mac48Address, uint32_t> m_lastDataSeqno;
-    //std::map<Mac48Address, Ptr<LruGroupSeqNo>> m_lastDataSeqno;
+    // std::map<Mac48Address, Ptr<LruGroupSeqNo>> m_lastDataSeqno;
     /// keeps HWMP seqno (first in pair) and HWMP metric (second in pair) for each address
     std::map<Mac48Address, std::pair<uint32_t, uint32_t>> m_hwmpSeqnoMetricDatabase;
     ///@}

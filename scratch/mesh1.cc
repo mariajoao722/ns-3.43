@@ -551,13 +551,6 @@ MeshTest::InstallInternetStack()
 
     Ipv4StaticRoutingHelper multicastRoutingHelper;
 
-    for (uint32_t i = 0; i < nodes.GetN(); ++i)
-    {
-        Ptr<Node> node = nodes.Get(i);
-        Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
-        ipv4->SetAttribute("IpForward", BooleanValue(true));
-    } 
-
     Ptr<Node> sender = nodes.Get(0);
     Ptr<NetDevice> senderIf = meshDevices.Get(0);
     multicastRoutingHelper.SetDefaultMulticastRoute(sender, senderIf);
