@@ -126,6 +126,7 @@ src/mesh/examples/CMakeFiles/mesh-example.dir/mesh-example.cc.o: /home/mpais/ns-
   /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/ie-dot11s-perr.h \
   /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/ie-dot11s-prep.h \
   /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/ie-dot11s-preq.h \
+  /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/ie-dot11s-prune.h \
   /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/ie-dot11s-rann.h \
   /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/inet-socket-address.h \
   /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/inet6-socket-address.h \
@@ -683,6 +684,7 @@ src/mesh/examples/CMakeFiles/mesh-example.dir/mesh-example.cc.o: /home/mpais/ns-
   /home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/dot11s/ie-dot11s-perr.h \
   /home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/dot11s/ie-dot11s-prep.h \
   /home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/dot11s/ie-dot11s-preq.h \
+  /home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/dot11s/ie-dot11s-prune.h \
   /home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/dot11s/ie-dot11s-rann.h \
   /home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/dot11s/lru-group-seqno.h \
   /home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/dot11s/peer-link-frame.h \
@@ -1377,9 +1379,9 @@ src/mesh/examples/CMakeFiles/mesh-example.dir/mesh-example.cc.o: /home/mpais/ns-
 
 /usr/include/x86_64-linux-gnu/bits/errno.h:
 
-/home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/pair.h:
+/usr/include/x86_64-linux-gnu/bits/timex.h:
 
-/home/mpais/ns-allinone-3.43/ns-3.43/src/wifi/model/mgt-headers.h:
+/usr/include/x86_64-linux-gnu/bits/endianness.h:
 
 /usr/include/x86_64-linux-gnu/bits/waitflags.h:
 
@@ -1418,10 +1420,6 @@ src/mesh/examples/CMakeFiles/mesh-example.dir/mesh-example.cc.o: /home/mpais/ns-
 /home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/dot11s/dot11s-mac-header.h:
 
 /home/mpais/ns-allinone-3.43/ns-3.43/src/mobility/model/gauss-markov-mobility-model.h:
-
-/home/mpais/ns-allinone-3.43/ns-3.43/src/core/model/random-variable-stream.h:
-
-/home/mpais/ns-allinone-3.43/ns-3.43/src/internet/model/tcp-ledbat.h:
 
 /home/mpais/ns-allinone-3.43/ns-3.43/src/core/model/pair.h:
 
@@ -1468,10 +1466,6 @@ src/mesh/examples/CMakeFiles/mesh-example.dir/mesh-example.cc.o: /home/mpais/ns-
 /home/mpais/ns-allinone-3.43/ns-3.43/src/core/model/fatal-impl.h:
 
 /home/mpais/ns-allinone-3.43/ns-3.43/src/wifi/model/he/he-capabilities.h:
-
-/home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/fatal-error.h:
-
-/home/mpais/ns-allinone-3.43/ns-3.43/src/wifi/model/ht/ht-operation.h:
 
 /usr/include/c++/13/bits/stl_raw_storage_iter.h:
 
@@ -1560,6 +1554,10 @@ src/mesh/examples/CMakeFiles/mesh-example.dir/mesh-example.cc.o: /home/mpais/ns-
 /usr/include/c++/13/bits/codecvt.h:
 
 /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/waypoint-mobility-model.h:
+
+/usr/include/x86_64-linux-gnu/bits/environments.h:
+
+/home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/warnings.h:
 
 /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/wall-clock-synchronizer.h:
 
@@ -1875,6 +1873,10 @@ src/mesh/examples/CMakeFiles/mesh-example.dir/mesh-example.cc.o: /home/mpais/ns-
 
 /home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/dot11s/ie-dot11s-configuration.h:
 
+/home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/pair.h:
+
+/home/mpais/ns-allinone-3.43/ns-3.43/src/wifi/model/mgt-headers.h:
+
 /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/packet-tag-list.h:
 
 /home/mpais/ns-allinone-3.43/ns-3.43/src/core/model/uinteger.h:
@@ -1942,6 +1944,16 @@ src/mesh/examples/CMakeFiles/mesh-example.dir/mesh-example.cc.o: /home/mpais/ns-
 /usr/include/x86_64-linux-gnu/bits/floatn.h:
 
 /home/mpais/ns-allinone-3.43/ns-3.43/src/core/model/object-ptr-container.h:
+
+/home/mpais/ns-allinone-3.43/ns-3.43/src/core/model/random-variable-stream.h:
+
+/home/mpais/ns-allinone-3.43/ns-3.43/src/wifi/model/ht/ht-operation.h:
+
+/home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/fatal-error.h:
+
+/home/mpais/ns-allinone-3.43/ns-3.43/src/internet/model/tcp-ledbat.h:
+
+/home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/ie-dot11s-prune.h:
 
 /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/hwmp-rtable.h:
 
@@ -2067,9 +2079,9 @@ src/mesh/examples/CMakeFiles/mesh-example.dir/mesh-example.cc.o: /home/mpais/ns-
 
 /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/ripng-helper.h:
 
-/home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/helper/mesh-helper.h:
-
 /home/mpais/ns-allinone-3.43/ns-3.43/src/applications/model/seq-ts-header.h:
+
+/home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/helper/mesh-helper.h:
 
 /usr/include/c++/13/bits/stl_vector.h:
 
@@ -2222,10 +2234,6 @@ src/mesh/examples/CMakeFiles/mesh-example.dir/mesh-example.cc.o: /home/mpais/ns-
 /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/ipv6-list-routing-helper.h:
 
 /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/geocentric-constant-position-mobility-model.h:
-
-/home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/warnings.h:
-
-/usr/include/x86_64-linux-gnu/bits/environments.h:
 
 /home/mpais/ns-allinone-3.43/ns-3.43/src/core/model/val-array.h:
 
@@ -2623,6 +2631,14 @@ src/mesh/examples/CMakeFiles/mesh-example.dir/mesh-example.cc.o: /home/mpais/ns-
 
 /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/ipv6.h:
 
+/home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/packet-socket-address.h:
+
+/usr/include/c++/13/bits/enable_special_members.h:
+
+/home/mpais/ns-allinone-3.43/ns-3.43/src/network/helper/trace-helper.h:
+
+/home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/list-scheduler.h:
+
 /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/log.h:
 
 /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/lollipop-counter.h:
@@ -2736,14 +2752,6 @@ src/mesh/examples/CMakeFiles/mesh-example.dir/mesh-example.cc.o: /home/mpais/ns-
 /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/geographic-positions.h:
 
 /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/packet-metadata.h:
-
-/home/mpais/ns-allinone-3.43/ns-3.43/src/network/helper/trace-helper.h:
-
-/home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/list-scheduler.h:
-
-/home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/packet-socket-address.h:
-
-/usr/include/c++/13/bits/enable_special_members.h:
 
 /home/mpais/ns-allinone-3.43/ns-3.43/build/include/ns3/ascii-test.h:
 
@@ -3044,6 +3052,8 @@ src/mesh/examples/CMakeFiles/mesh-example.dir/mesh-example.cc.o: /home/mpais/ns-
 /home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/dot11s/ie-dot11s-peer-management.h:
 
 /home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/dot11s/ie-dot11s-peering-protocol.h:
+
+/home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/dot11s/ie-dot11s-prune.h:
 
 /home/mpais/ns-allinone-3.43/ns-3.43/src/mesh/model/dot11s/peer-link.h:
 
@@ -3664,7 +3674,3 @@ src/mesh/examples/CMakeFiles/mesh-example.dir/mesh-example.cc.o: /home/mpais/ns-
 /usr/include/c++/13/set:
 
 /usr/include/x86_64-linux-gnu/bits/endian.h:
-
-/usr/include/x86_64-linux-gnu/bits/timex.h:
-
-/usr/include/x86_64-linux-gnu/bits/endianness.h:

@@ -365,6 +365,8 @@ HwmpProtocolMac::SendPrep(IePrep prep, Mac48Address receiver)
 
 void HwmpProtocolMac::SendPrune(IePrune prune, Mac48Address receiver)
 {
+    // addr group(addr3) e sender(addr4)
+    // + timestamp para o soft prune
     NS_LOG_FUNCTION(this << receiver);
     // Create packet
     Ptr<Packet> packet = Create<Packet>();
@@ -378,8 +380,11 @@ void HwmpProtocolMac::SendPrune(IePrune prune, Mac48Address receiver)
     hdr.SetDsNotFrom();
     hdr.SetDsNotTo();
     hdr.SetAddr1(receiver);
+    NS_LOG_DEBUG("HwmpProtocolMac::SendPrune: receiver = " << receiver);
     hdr.SetAddr2(m_parent->GetAddress());
+    NS_LOG_DEBUG("HwmpProtocolMac::SendPrune: addr2 = " << m_parent->GetAddress());
     hdr.SetAddr3(m_protocol->GetAddress());
+    NS_LOG_DEBUG("HwmpProtocolMac::SendPrune: addr3 = " << m_protocol->GetAddress());
     // Send Management frame
     m_stats.txPrune++;
     m_stats.txMgt++;

@@ -605,8 +605,8 @@ class HwmpProtocol : public MeshL2RoutingProtocol
     /// \name Sequence number filters
     ///@{
     /// Data sequence number database
-    std::map<Mac48Address, uint32_t> m_lastDataSeqno;
-    // std::map<Mac48Address, Ptr<LruGroupSeqNo>> m_lastDataSeqno;
+   // std::map<Mac48Address, uint32_t> m_lastDataSeqno;
+     std::map<Mac48Address, Ptr<LruGroupSeqNo>> m_lastDataSeqno;
     /// keeps HWMP seqno (first in pair) and HWMP metric (second in pair) for each address
     std::map<Mac48Address, std::pair<uint32_t, uint32_t>> m_hwmpSeqnoMetricDatabase;
     ///@}

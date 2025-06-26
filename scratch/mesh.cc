@@ -162,10 +162,6 @@ ReceivePacket(Ptr<Socket> socket)
         std::cout << "Received packet at Node: " << socket->GetNode()->GetId() << std::endl;
         std::cout << "Packet size: " << packet->GetSize() << " bytes." << std::endl;
 
-        // Print packet contents for debugging
-        packet->Print(std::cout);
-        std::cout << std::endl;
-
         // Attempt to print the sender's address
         InetSocketAddress senderAddress = InetSocketAddress::ConvertFrom(from);
         std::cout << "Sender address: " << senderAddress.GetIpv4()
@@ -623,12 +619,12 @@ MeshTest::Run()
     // LogComponentEnable("UdpSocketImpl", LOG_LEVEL_ALL);
     // LogComponentEnable("UdpL4Protocol", LOG_LEVEL_ALL);
     // LogComponentEnable("Ipv4L3Protocol", LOG_LEVEL_ALL);
-    // LogComponentEnable("HwmpProtocol", LOG_LEVEL_ALL);
+     LogComponentEnable("HwmpProtocol", LOG_LEVEL_ALL);
     // LogComponentEnable("MeshPointDevice", LOG_LEVEL_ALL);
     // LogComponentEnable("YansWifiPhy", LOG_LEVEL_ALL);
     // LogComponentEnable("PeerManagementProtocol", LOG_LEVEL_ALL);
-    // LogComponentEnable("HwmpProtocolMac", LOG_LEVEL_ALL);
-    LogComponentEnable("MeshWifiInterfaceMac", LOG_LEVEL_ALL);
+     LogComponentEnable("HwmpProtocolMac", LOG_LEVEL_ALL);
+    //LogComponentEnable("MeshWifiInterfaceMac", LOG_LEVEL_ALL);
 
     CreateNodes();
     InstallInternetStack();

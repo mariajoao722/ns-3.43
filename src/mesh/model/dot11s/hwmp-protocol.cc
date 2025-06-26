@@ -697,7 +697,7 @@ HwmpProtocol::RequestRoute(uint32_t sourceIface,
                         no forwarding
                 }*/
 
-                // APlicar asa funçoes de prune em cima criadas e usar o resultados dos active peer
+                // APlicar as funçoes de prune em cima criadas e usar o resultados dos active peer
                 // links para saber o addr dos receivers
                 /* for (const auto& addr : m_lastActivePeerAddrs)
                  {
@@ -708,6 +708,10 @@ HwmpProtocol::RequestRoute(uint32_t sourceIface,
                          return;
                      }
                  }  */
+
+                    std::vector<std::pair<Mac48Address, uint32_t>> pruneList = {{GetAddress(), 42}};
+                    SendPrune(pruneList, source, 1, 1);
+                
 
                 // Forward the packet to all receivers:
                 Ptr<Packet> packetCopy = packet->Copy();
@@ -1225,12 +1229,12 @@ HwmpProtocol::SendPrep(Mac48Address src,
     m_stats.initiatedPrep++;
 }
 
-//New
+// New
 void
-HwmpProtocol::SendPrune (std::vector<std::pair<Mac48Address, uint32_t>>& entries,
-                   Mac48Address receiver,
-                   uint32_t interface,
-                   uint8_t ttl)
+HwmpProtocol::SendPrune(std::vector<std::pair<Mac48Address, uint32_t>>& entries,
+                        Mac48Address receiver,
+                        uint32_t interface,
+                        uint8_t ttl)
 {
     NS_LOG_FUNCTION(this << entries << receiver << interface << ttl);
     NS_LOG_DEBUG("I am " << GetAddress());
@@ -1243,7 +1247,8 @@ HwmpProtocol::SendPrune (std::vector<std::pair<Mac48Address, uint32_t>>& entries
     NS_ASSERT(prune_sender != m_interfaces.end());
     prune_sender->second->SendPrune(prune, receiver);
 }
-//end
+
+// end
 bool
 HwmpProtocol::Install(Ptr<MeshPointDevice> mp)
 {
@@ -1310,15 +1315,15 @@ HwmpProtocol::DropDataFrame(uint32_t seqno, Mac48Address source)
         NS_LOG_DEBUG("Dropping seqno " << seqno << "; from self");
         return true;
     }
-    const auto i = m_lastDataSeqno.find(source);
-    // std::map<Mac48Address, Ptr<LruGroupSeqNo>, std::less<Mac48Address>>::const_iterator i =
-    // m_lastDataSeqno.find(source);
+    //const auto i = m_lastDataSeqno.find(source);
+     std::map<Mac48Address, Ptr<LruGroupSeqNo>, std::less<Mac48Address>>::const_iterator i =
+     m_lastDataSeqno.find(source);
     if (i == m_lastDataSeqno.end())
     {
-        m_lastDataSeqno[source] = seqno;
-        // m_lastDataSeqno[source] = CreateObject<LruGroupSeqNo>();
+        //m_lastDataSeqno[source] = seqno;
+        m_lastDataSeqno[source] = CreateObject<LruGroupSeqNo>();
     }
-    else
+/*     else
     {
         if ((int32_t)(i->second - seqno) >= 0)
         {
@@ -1327,8 +1332,8 @@ HwmpProtocol::DropDataFrame(uint32_t seqno, Mac48Address source)
         }
         m_lastDataSeqno[source] = seqno;
     }
-    return false;
-    // return m_lastDataSeqno[source]->CheckSeen(seqno);
+    return false; */
+     return m_lastDataSeqno[source]->CheckSeen(seqno);
 }
 
 HwmpProtocol::PathError

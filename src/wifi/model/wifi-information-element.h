@@ -157,6 +157,7 @@ typedef uint8_t WifiInformationElementId;
 #define IE_PREQ ((WifiInformationElementId)130)
 #define IE_PREP ((WifiInformationElementId)131)
 #define IE_PERR ((WifiInformationElementId)132)
+#define IE_PRUNE ((WifiInformationElementId)136) // NEW
 // 133 to 136 are reserved
 #define IE_PROXY_UPDATE ((WifiInformationElementId)137)
 #define IE_PROXY_UPDATE_CONFIRMATION ((WifiInformationElementId)138)
@@ -216,7 +217,7 @@ typedef uint8_t WifiInformationElementId;
 #define IE_FRAGMENT ((WifiInformationElementId)242)
 // 243 to 254 are reserved
 #define IE_EXTENSION ((WifiInformationElementId)255)
-#define IE_PRUNE ((WifiInformationElementId)256) // NEW
+
 
 #define IE_EXT_HE_CAPABILITIES ((WifiInformationElementId)35)
 #define IE_EXT_HE_OPERATION ((WifiInformationElementId)36)

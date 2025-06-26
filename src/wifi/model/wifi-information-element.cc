@@ -24,20 +24,19 @@ uint16_t
 WifiInformationElement::GetSerializedSize() const
 {
     uint16_t size = GetInformationFieldSize();
-// MUDEI DE 255 PARA 256 TUDO ONDE TINHA 255
-    if (size <= 256) // size includes the Element ID Extension field
+    if (size <= 255) // size includes the Element ID Extension field
     {
         return (2 + size);
     }
 
     // the element needs to be fragmented (Sec. 10.28.11 of 802.11-2020)
     // Let M be the number of IEs of maximum size
-    uint16_t m = size / 256;
+    uint16_t m = size / 255;
     // N equals 1 if an IE not of maximum size is present at the end, 0 otherwise
-    uint8_t remainder = size % 256;
+    uint8_t remainder = size % 255;
     uint8_t n = (remainder > 0) ? 1 : 0;
 
-    return m * (2 + 256) + n * (2 + remainder);
+    return m * (2 + 255) + n * (2 + remainder);
 }
 
 WifiInformationElementId
@@ -50,8 +49,7 @@ Buffer::Iterator
 WifiInformationElement::Serialize(Buffer::Iterator i) const
 {
     auto size = GetInformationFieldSize();
-//MUDEI DE 255 PARA 256 TUDO ONDE TINHA 255
-    if (size > 256)
+    if (size > 255)
     {
         return SerializeFragments(i, size);
     }
@@ -75,8 +73,7 @@ WifiInformationElement::Serialize(Buffer::Iterator i) const
 Buffer::Iterator
 WifiInformationElement::SerializeFragments(Buffer::Iterator i, uint16_t size) const
 {
-    //MUDEI DE 255 PARA 256 TUDO ONDE TINHA 255
-    NS_ASSERT(size > 256);
+    NS_ASSERT(size > 255);
     // let the subclass serialize the IE in a temporary buffer
     Buffer buffer;
     buffer.AddAtStart(size);
@@ -84,13 +81,13 @@ WifiInformationElement::SerializeFragments(Buffer::Iterator i, uint16_t size) co
     SerializeInformationField(source);
 
     // Let M be the number of IEs of maximum size
-    uint16_t m = size / 256;
+    uint16_t m = size / 255;
 
     for (uint16_t index = 0; index < m; index++)
     {
         i.WriteU8((index == 0) ? ElementId() : IE_FRAGMENT);
-        i.WriteU8(256);
-        uint8_t length = 256;
+        i.WriteU8(255);
+        uint8_t length = 255;
         if (index == 0 && ElementId() == IE_EXTENSION)
         {
             i.WriteU8(ElementIdExt());
@@ -103,7 +100,7 @@ WifiInformationElement::SerializeFragments(Buffer::Iterator i, uint16_t size) co
     }
 
     // last fragment
-    uint8_t remainder = size % 256;
+    uint8_t remainder = size % 255;
 
     if (remainder > 0)
     {
@@ -167,8 +164,7 @@ WifiInformationElement::DeserializeIfPresent(Buffer::Iterator i)
 Buffer::Iterator
 WifiInformationElement::DoDeserialize(Buffer::Iterator i, uint16_t length)
 {
-    // MUDEI DE 255 PARA 256 TUDO ONDE TINHA 255
-    uint16_t limit = (ElementId() == IE_EXTENSION) ? 254 : 256;
+    uint16_t limit = (ElementId() == IE_EXTENSION) ? 254 : 255;
 
     auto tmp = i;
     tmp.Next(length); // tmp points to past the last byte of the IE/first fragment

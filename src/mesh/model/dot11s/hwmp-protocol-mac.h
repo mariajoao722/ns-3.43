@@ -25,6 +25,7 @@ namespace dot11s
 class IePreq;
 class IePrep;
 class IePerr;
+class IePrune;
 
 /**
  * \ingroup dot11s
