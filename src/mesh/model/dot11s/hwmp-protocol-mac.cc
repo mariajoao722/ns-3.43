@@ -172,9 +172,9 @@ HwmpProtocolMac::ReceiveAction(Ptr<Packet> packet, const WifiMacHeader& header)
             m_stats.rxPrune++; // Adiciona esse campo à tua estrutura de estatísticas
 
             m_protocol->ReceivePrune(prune->GetPruneUnits(),
-                             header.GetAddr2(),
-                             m_ifIndex,
-                             header.GetAddr3());
+                                     header.GetAddr2(),
+                                     m_ifIndex,
+                                     header.GetAddr3());
         }
     }
     if (!failedDestinations.empty())
@@ -363,7 +363,8 @@ HwmpProtocolMac::SendPrep(IePrep prep, Mac48Address receiver)
     m_parent->SendManagementFrame(packet, hdr);
 }
 
-void HwmpProtocolMac::SendPrune(IePrune prune, Mac48Address receiver)
+void
+HwmpProtocolMac::SendPrune(IePrune prune, Mac48Address receiver)
 {
     // addr group(addr3) e sender(addr4)
     // + timestamp para o soft prune
@@ -381,10 +382,10 @@ void HwmpProtocolMac::SendPrune(IePrune prune, Mac48Address receiver)
     hdr.SetDsNotTo();
     hdr.SetAddr1(receiver);
     NS_LOG_DEBUG("HwmpProtocolMac::SendPrune: receiver = " << receiver);
-    hdr.SetAddr2(m_parent->GetAddress());
+    hdr.SetAddr2(m_parent->GetAddress()); // The sender of the prune
     NS_LOG_DEBUG("HwmpProtocolMac::SendPrune: addr2 = " << m_parent->GetAddress());
-    hdr.SetAddr3(m_protocol->GetAddress());
-    NS_LOG_DEBUG("HwmpProtocolMac::SendPrune: addr3 = " << m_protocol->GetAddress());
+    hdr.SetAddr3(prune.GetGroup());
+    NS_LOG_DEBUG("HwmpProtocolMac::SendPrune: addr3 = " << prune.GetGroup());
     // Send Management frame
     m_stats.txPrune++;
     m_stats.txMgt++;

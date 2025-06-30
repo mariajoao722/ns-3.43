@@ -265,12 +265,12 @@ class HwmpProtocol : public MeshL2RoutingProtocol
     double m_alpha;          // EWMA weight (e.g. 0.1)
     double m_nodeVarTtl;     // EWMA of squared deviations (variance)
 
-    std::map<std::pair<Mac48Address, Mac48Address>, Time> m_pruneTable;
+    std::map<std::tuple<Mac48Address, Mac48Address, Mac48Address>, Time> m_pruneTable;
     Time m_pruneLifetime;
 
-    void AddPruneEntry(Mac48Address src, Mac48Address dst);
+    void AddPruneEntry(Mac48Address src, Mac48Address dst, Mac48Address multicastGroup);
     void PurgeOldPrunes();
-    bool IsPruned(Mac48Address src, Mac48Address dst);
+    bool IsPruned(Mac48Address src, Mac48Address dst, Mac48Address multicastGroup) const;
 
     static std::set<Mac48Address> m_multicastGroupNodes; // set of multicast group nodes
     // End of new code
@@ -376,6 +376,7 @@ class HwmpProtocol : public MeshL2RoutingProtocol
      * \param from the from address
      * \param interface the interface
      * \param fromMp the from MP address
+     * \param multicastGroup the multicast group address
      */
     void ReceivePrune(const std::vector<std::pair<Mac48Address, uint32_t>>& pruneUnits,
                       Mac48Address from,
@@ -407,7 +408,9 @@ class HwmpProtocol : public MeshL2RoutingProtocol
     void SendPrune(std::vector<std::pair<Mac48Address, uint32_t>>& entries,
                    Mac48Address receiver,
                    uint32_t interface,
+                   Mac48Address multicastGroup,
                    uint8_t ttl = 1);
+                   
     // end
     /**
      * \brief forms a path error information element when list of destination fails on a given

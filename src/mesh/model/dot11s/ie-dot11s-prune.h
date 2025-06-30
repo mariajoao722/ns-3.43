@@ -58,6 +58,15 @@ class IePrune : public WifiInformationElement
     void SetTtl(uint8_t ttl);
     uint8_t GetTtl() const;
 
+    /**
+     * \brief Set the group address for multicast pruning
+     * \param group The group address to set
+     *
+     * This is used to specify the multicast group for which the PRUNE applies.
+     */
+    void SetGroup(Mac48Address group);
+    Mac48Address GetGroup() const;
+
     // Inherited from WifiInformationElement
     WifiInformationElementId ElementId() const override;
     void SerializeInformationField(Buffer::Iterator i) const override;
@@ -71,6 +80,7 @@ class IePrune : public WifiInformationElement
     Mac48Address m_receiver; //!< Receiver of the PRUNE message
     uint32_t m_interface;    //!< Interface index used to send PRUNE
     uint8_t m_ttl;           //!< TTL value of PRUNE message
+    Mac48Address m_group;    //!< Group address for multicast pruning
 };
 } // namespace dot11s
 } // namespace ns3

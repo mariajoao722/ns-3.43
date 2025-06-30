@@ -43,9 +43,9 @@ IePrune::AddPruneUnit(Mac48Address destination, uint32_t reasonCode)
 }
 
 void
-IePrune::SetEntries (const std::vector<std::pair<Mac48Address, uint32_t>> &entries)
+IePrune::SetEntries(const std::vector<std::pair<Mac48Address, uint32_t>>& entries)
 {
-  m_pruneUnits = entries;
+    m_pruneUnits = entries;
 }
 
 std::vector<std::pair<Mac48Address, uint32_t>>
@@ -55,39 +55,51 @@ IePrune::GetPruneUnits() const
 }
 
 void
-IePrune::SetReceiver (Mac48Address receiver)
+IePrune::SetReceiver(Mac48Address receiver)
 {
-  m_receiver = receiver;
+    m_receiver = receiver;
 }
 
 Mac48Address
-IePrune::GetReceiver () const
+IePrune::GetReceiver() const
 {
-  return m_receiver;
+    return m_receiver;
 }
 
 void
-IePrune::SetInterface (uint32_t interface)
+IePrune::SetInterface(uint32_t interface)
 {
-  m_interface = interface;
+    m_interface = interface;
 }
 
 uint32_t
-IePrune::GetInterface () const
+IePrune::GetInterface() const
 {
-  return m_interface;
+    return m_interface;
 }
 
 void
-IePrune::SetTtl (uint8_t ttl)
+IePrune::SetTtl(uint8_t ttl)
 {
-  m_ttl = ttl;
+    m_ttl = ttl;
 }
 
 uint8_t
-IePrune::GetTtl () const
+IePrune::GetTtl() const
 {
-  return m_ttl;
+    return m_ttl;
+}
+
+void
+IePrune::SetGroup(Mac48Address group)
+{
+    m_group = group;
+}
+
+Mac48Address
+IePrune::GetGroup() const
+{
+    return m_group;
 }
 
 void

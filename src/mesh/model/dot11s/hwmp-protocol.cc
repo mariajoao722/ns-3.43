@@ -372,9 +372,9 @@ HwmpProtocol::DoLinkCheck()
 }
 
 void
-HwmpProtocol::AddPruneEntry(Mac48Address src, Mac48Address dst)
+HwmpProtocol::AddPruneEntry(Mac48Address src, Mac48Address dst, Mac48Address multicastGroup)
 {
-    m_pruneTable[{src, dst}] = Simulator::Now();
+    m_pruneTable[{src, dst, multicastGroup}] = Simulator::Now();
 }
 
 void
@@ -396,9 +396,9 @@ HwmpProtocol::PurgeOldPrunes()
 }
 
 bool
-HwmpProtocol::IsPruned(Mac48Address src, Mac48Address dst)
+HwmpProtocol::IsPruned(Mac48Address src, Mac48Address dst, Mac48Address multicastGroup) const
 {
-    auto it = m_pruneTable.find({src, dst});
+    auto it = m_pruneTable.find({src, dst, multicastGroup});
     return (it != m_pruneTable.end());
 }
 
@@ -708,10 +708,14 @@ HwmpProtocol::RequestRoute(uint32_t sourceIface,
                          return;
                      }
                  }  */
+                // transforamar Ipv4address to Mac48Address
+                //  Mac48Address source = Ipv4Address::ConvertFrom(sourceIpv4);
 
-                    std::vector<std::pair<Mac48Address, uint32_t>> pruneList = {{GetAddress(), 42}};
-                    SendPrune(pruneList, source, 1, 1);
-                
+                Mac48Address multicastGroup = *i; // Example multicast MAC address
+                NS_LOG_DEBUG("Multicast group address: " << multicastGroup);
+
+                std::vector<std::pair<Mac48Address, uint32_t>> pruneList = {{GetAddress(), 42}};
+                SendPrune(pruneList, source, 1, multicastGroup,1);
 
                 // Forward the packet to all receivers:
                 Ptr<Packet> packetCopy = packet->Copy();
@@ -1200,10 +1204,11 @@ HwmpProtocol::ReceivePrune(const std::vector<std::pair<Mac48Address, uint32_t>>&
 
         NS_LOG_INFO("Received PRUNE for destination " << destination << " with reason " << reason);
 
-        AddPruneEntry(from, destination);
+        AddPruneEntry(from, destination, fromMp);
     }
 }
 
+// end
 void
 HwmpProtocol::SendPrep(Mac48Address src,
                        Mac48Address dst,
@@ -1234,6 +1239,7 @@ void
 HwmpProtocol::SendPrune(std::vector<std::pair<Mac48Address, uint32_t>>& entries,
                         Mac48Address receiver,
                         uint32_t interface,
+                        Mac48Address multicastGroup,
                         uint8_t ttl)
 {
     NS_LOG_FUNCTION(this << entries << receiver << interface << ttl);
@@ -1243,6 +1249,7 @@ HwmpProtocol::SendPrune(std::vector<std::pair<Mac48Address, uint32_t>>& entries,
     prune.SetReceiver(receiver);
     prune.SetInterface(interface);
     prune.SetTtl(ttl);
+    prune.SetGroup(multicastGroup);
     auto prune_sender = m_interfaces.find(interface);
     NS_ASSERT(prune_sender != m_interfaces.end());
     prune_sender->second->SendPrune(prune, receiver);
@@ -1315,25 +1322,25 @@ HwmpProtocol::DropDataFrame(uint32_t seqno, Mac48Address source)
         NS_LOG_DEBUG("Dropping seqno " << seqno << "; from self");
         return true;
     }
-    //const auto i = m_lastDataSeqno.find(source);
-     std::map<Mac48Address, Ptr<LruGroupSeqNo>, std::less<Mac48Address>>::const_iterator i =
-     m_lastDataSeqno.find(source);
+    // const auto i = m_lastDataSeqno.find(source);
+    std::map<Mac48Address, Ptr<LruGroupSeqNo>, std::less<Mac48Address>>::const_iterator i =
+        m_lastDataSeqno.find(source);
     if (i == m_lastDataSeqno.end())
     {
-        //m_lastDataSeqno[source] = seqno;
+        // m_lastDataSeqno[source] = seqno;
         m_lastDataSeqno[source] = CreateObject<LruGroupSeqNo>();
     }
-/*     else
-    {
-        if ((int32_t)(i->second - seqno) >= 0)
+    /*     else
         {
-            NS_LOG_DEBUG("Dropping seqno " << seqno << "; stale frame");
-            return true;
+            if ((int32_t)(i->second - seqno) >= 0)
+            {
+                NS_LOG_DEBUG("Dropping seqno " << seqno << "; stale frame");
+                return true;
+            }
+            m_lastDataSeqno[source] = seqno;
         }
-        m_lastDataSeqno[source] = seqno;
-    }
-    return false; */
-     return m_lastDataSeqno[source]->CheckSeen(seqno);
+        return false; */
+    return m_lastDataSeqno[source]->CheckSeen(seqno);
 }
 
 HwmpProtocol::PathError
