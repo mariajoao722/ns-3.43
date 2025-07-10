@@ -172,14 +172,14 @@ HwmpProtocol::HwmpProtocol()
       m_unicastDataThreshold(1),
       m_doFlag(false),
       m_rfFlag(false),
-      m_firstTtlStored(false),     // new
-      m_firstReceivedTtl(0),       // new
-      m_nodeTtlSum(0),             // new
-      m_nodeTtlCount(0),           // new
-      m_nodeAvgTtl(0.0),           // new
-      m_alpha(0.2),                // new
-      m_nodeVarTtl(0.0),           // new
-      m_pruneLifetime(Seconds(30)) // new
+      m_firstTtlStored(false),    // new
+      m_firstReceivedTtl(0),      // new
+      m_nodeTtlSum(0),            // new
+      m_nodeTtlCount(0),          // new
+      m_nodeAvgTtl(0.0),          // new
+      m_alpha(0.2),               // new
+      m_nodeVarTtl(0.0),          // new
+      m_pruneTimeout(Seconds(10)) // new
 {
     NS_LOG_FUNCTION(this);
     m_coefficient = CreateObject<UniformRandomVariable>();
@@ -203,7 +203,7 @@ HwmpProtocol::DoInitialize()
     }
     // new
     //  Start periodic purge for soft-state prune table
-    // Simulator::Schedule(Seconds(1), &HwmpProtocol::PurgeOldPrunes, this);
+    ScheduleNextPrune();
     // end
 }
 
@@ -223,6 +223,7 @@ HwmpProtocol::DoDispose()
     m_rqueue.clear();
     m_rtable = nullptr;
     m_mp = nullptr;
+    m_pruneEvent.Cancel(); // new
 }
 
 // New
@@ -378,12 +379,20 @@ HwmpProtocol::AddPruneEntry(Mac48Address src, Mac48Address dst, Mac48Address mul
 }
 
 void
+HwmpProtocol::ScheduleNextPrune()
+{
+    // fire PurgeOldPrunes() in 1 second from now
+    m_pruneEvent = Simulator::Schedule(Seconds(1.0), &HwmpProtocol::PurgeOldPrunes, this);
+}
+
+void
 HwmpProtocol::PurgeOldPrunes()
 {
     Time now = Simulator::Now();
+
     for (auto it = m_pruneTable.begin(); it != m_pruneTable.end();)
     {
-        if (now - it->second > m_pruneLifetime)
+        if (now - it->second > m_pruneTimeout)
         {
             it = m_pruneTable.erase(it);
         }
@@ -392,7 +401,7 @@ HwmpProtocol::PurgeOldPrunes()
             ++it;
         }
     }
-    Simulator::Schedule(Seconds(1), &HwmpProtocol::PurgeOldPrunes, this);
+    ScheduleNextPrune(); // reschedule the next purge
 }
 
 bool
@@ -433,6 +442,7 @@ HwmpProtocol::RequestRoute(uint32_t sourceIface,
 
     if (sourceIface == GetMeshPoint()->GetIfIndex())
     {
+        NS_LOG_DEBUG("Requesting route for packet from level 3");
         // packet from level 3
         if (packet->PeekPacketTag(tag))
         {
@@ -448,6 +458,7 @@ HwmpProtocol::RequestRoute(uint32_t sourceIface,
     }
     else
     {
+        NS_LOG_DEBUG("Requesting route for packet from level 2");
         if (!packet->RemovePacketTag(tag))
         {
             NS_FATAL_ERROR("HWMP tag is supposed to be here at this point.");
@@ -708,14 +719,6 @@ HwmpProtocol::RequestRoute(uint32_t sourceIface,
                          return;
                      }
                  }  */
-                // transforamar Ipv4address to Mac48Address
-                //  Mac48Address source = Ipv4Address::ConvertFrom(sourceIpv4);
-
-                Mac48Address multicastGroup = *i; // Example multicast MAC address
-                NS_LOG_DEBUG("Multicast group address: " << multicastGroup);
-
-                std::vector<std::pair<Mac48Address, uint32_t>> pruneList = {{GetAddress(), 42}};
-                SendPrune(pruneList, source, 1, multicastGroup,1);
 
                 // Forward the packet to all receivers:
                 Ptr<Packet> packetCopy = packet->Copy();
@@ -1253,6 +1256,88 @@ HwmpProtocol::SendPrune(std::vector<std::pair<Mac48Address, uint32_t>>& entries,
     auto prune_sender = m_interfaces.find(interface);
     NS_ASSERT(prune_sender != m_interfaces.end());
     prune_sender->second->SendPrune(prune, receiver);
+}
+
+void
+HwmpProtocol::OnMacTx(Ptr<const Packet> packet,
+                      Mac48Address nextHop,
+                      uint32_t interfaceIndex,
+                      Mac48Address group)
+{
+    NS_LOG_FUNCTION(this << packet << nextHop << interfaceIndex);
+    // Peek the HWMP tag to see who the originator and the group are
+    HwmpTag tag;
+    if (!packet->PeekPacketTag(tag))
+        return;
+
+    NS_LOG_DEBUG("OnMacTx: NextHop" << nextHop << ", group=" << group);
+
+    if (!group.IsGroup())
+        return; // only prune on multicasts
+
+    auto key = std::make_pair(nextHop, group);
+    auto it = std::make_tuple(nextHop, group, GetAddress());
+
+    // If it’s the very first packet, just mark it seen
+    if (!m_seenFirstMulticast[key])
+    {
+        m_seenFirstMulticast[key] = true;
+        return;
+    }
+
+
+    // Otherwise, it’s packet #2 or later → prune
+
+
+    // Check if the Next hop is a downstream or  upstream node
+    auto ttl = tag.GetTtl(); // Get the TTL from the tag
+    if (ttl < m_nodeAvgTtl + std::sqrt(m_nodeVarTtl))
+    {
+        NS_LOG_DEBUG("Next hop " << nextHop << " is a downstream node; ");
+
+        return;
+    }
+    else if (ttl > m_nodeAvgTtl + std::sqrt(m_nodeVarTtl))
+    {
+        NS_LOG_DEBUG("Next hop " << nextHop << " is an upstream node; ");
+       /*  std::vector<std::pair<Mac48Address, uint32_t>> entries;
+        entries.emplace_back(GetAddress(), PRUNE_REASON_NOT_INTERESTED);
+        SendPrune(entries, // entries
+                  nextHop, // receiver
+                  interfaceIndex,
+                  group,
+                  1); */
+    } else if (ttl == m_nodeAvgTtl + std::sqrt(m_nodeVarTtl))
+    {
+        NS_LOG_DEBUG("Next hop " << nextHop << " is at the same level; ");
+
+    }
+
+
+    //Fazer só este check quando recebo uma mensagem de prune, ou seja, na função receive prune???
+    auto g = GetMulticastGroupNodes();
+    // If the next hop is not in the multicast group, we can prune it
+    if (g.find(nextHop) == g.end() && g.find(GetAddress()) == g.end())
+    {
+        NS_LOG_DEBUG("Next hop " << nextHop << " is not in the multicast group; pruning.");
+
+        std::vector<std::pair<Mac48Address, uint32_t>> entries;
+        entries.emplace_back(GetAddress(), PRUNE_REASON_NOT_INTERESTED);
+        SendPrune(entries, // entries
+                  nextHop, // receiver
+                  interfaceIndex,
+                  group,
+                  1);
+    }
+
+    std::vector<std::pair<Mac48Address, uint32_t>> entries;
+    entries.emplace_back(GetAddress(), PRUNE_REASON_NOT_INTERESTED);
+    SendPrune(entries, // entries
+              nextHop, // receiver
+              interfaceIndex,
+              group,
+              1);
+    NS_LOG_INFO("Auto-pruning " << nextHop << " for flow Node0" << "→" << group);
 }
 
 // end

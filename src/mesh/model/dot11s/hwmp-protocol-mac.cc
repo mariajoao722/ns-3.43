@@ -84,12 +84,17 @@ HwmpProtocolMac::ReceiveData(Ptr<Packet> packet, const WifiMacHeader& header)
     tag.SetTtl(meshHdr.GetMeshTtl());
     packet->AddPacketTag(tag);
 
+
     if (((destination.IsGroup()) && (m_protocol->DropDataFrame(meshHdr.GetMeshSeqno(), source))))
     {
         NS_LOG_DEBUG("Dropping frame; source " << source << " dest " << destination << " seqno "
                                                << meshHdr.GetMeshSeqno());
         return false;
     }
+    NS_LOG_INFO("HwmpProtocolMac::ReceiveData: Received data frame from "
+                << source << " to " << destination << " current node " << m_protocol->GetAddress());
+
+    m_protocol->OnMacTx(packet, source, 1, destination);
 
     return true;
 }
@@ -366,8 +371,11 @@ HwmpProtocolMac::SendPrep(IePrep prep, Mac48Address receiver)
 void
 HwmpProtocolMac::SendPrune(IePrune prune, Mac48Address receiver)
 {
-    // addr group(addr3) e sender(addr4)
     // + timestamp para o soft prune
+    /*
+    addr1	Destino final da frame (quem vai receber)
+    addr2	Origem imediata (quem está a enviar agora)
+    addr3	Identificador lógico (grupo multicast) */
     NS_LOG_FUNCTION(this << receiver);
     // Create packet
     Ptr<Packet> packet = Create<Packet>();

@@ -54,6 +54,16 @@ struct RouteChange
     uint32_t seqnum;            ///< sequence number of route
 };
 
+//-----------------------------------------------------------------------------
+// Prune reason codes for 802.11s HWMP
+//-----------------------------------------------------------------------------
+enum PruneReasonCode : uint8_t
+{
+    PRUNE_REASON_NOT_INTERESTED = 1, // “I no longer need this multicast flow”
+    PRUNE_REASON_LINK_BROKEN = 2,    // “Peering link to me went down”
+    PRUNE_REASON_CONGESTION = 3,     // “Prune due to congestion”
+};
+
 /**
  * \ingroup dot11s
  *
@@ -266,13 +276,24 @@ class HwmpProtocol : public MeshL2RoutingProtocol
     double m_nodeVarTtl;     // EWMA of squared deviations (variance)
 
     std::map<std::tuple<Mac48Address, Mac48Address, Mac48Address>, Time> m_pruneTable;
-    Time m_pruneLifetime;
+    Time m_pruneTimeout;  // soft‐state timeout for prune entries
+    EventId m_pruneEvent; // event handle for our recurring prune task
 
     void AddPruneEntry(Mac48Address src, Mac48Address dst, Mac48Address multicastGroup);
-    void PurgeOldPrunes();
+    void PurgeOldPrunes(); // the function that will actually scan & delete old entries
     bool IsPruned(Mac48Address src, Mac48Address dst, Mac48Address multicastGroup) const;
 
+    void ScheduleNextPrune(); // helper to schedule the next prune pass
+
     static std::set<Mac48Address> m_multicastGroupNodes; // set of multicast group nodes
+    // key = (originator, multicastGroup)
+    std::map<std::pair<Mac48Address, Mac48Address>, bool> m_seenFirstMulticast;
+
+    void OnMacTx(Ptr<const Packet> packet,
+                 Mac48Address nextHop,
+                 uint32_t interfaceIndex,
+                 Mac48Address group);
+
     // End of new code
 
     void DoInitialize() override;
@@ -410,7 +431,7 @@ class HwmpProtocol : public MeshL2RoutingProtocol
                    uint32_t interface,
                    Mac48Address multicastGroup,
                    uint8_t ttl = 1);
-                   
+
     // end
     /**
      * \brief forms a path error information element when list of destination fails on a given
@@ -605,11 +626,11 @@ class HwmpProtocol : public MeshL2RoutingProtocol
     uint32_t m_dataSeqno;            ///< data sequence no
     uint32_t m_hwmpSeqno;            ///< HWMP sequence no
     uint32_t m_preqId;               ///< PREQ ID
-    /// \name Sequence number filters
-    ///@{
-    /// Data sequence number database
-   // std::map<Mac48Address, uint32_t> m_lastDataSeqno;
-     std::map<Mac48Address, Ptr<LruGroupSeqNo>> m_lastDataSeqno;
+                                     /// \name Sequence number filters
+                                     ///@{
+                                     /// Data sequence number database
+                                     // std::map<Mac48Address, uint32_t> m_lastDataSeqno;
+    std::map<Mac48Address, Ptr<LruGroupSeqNo>> m_lastDataSeqno;
     /// keeps HWMP seqno (first in pair) and HWMP metric (second in pair) for each address
     std::map<Mac48Address, std::pair<uint32_t, uint32_t>> m_hwmpSeqnoMetricDatabase;
     ///@}

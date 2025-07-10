@@ -598,20 +598,20 @@ MeshTest::InstallApplication()
                         multicastGroup,
                         remote);
 
-    /*         Simulator::Schedule(Seconds(3.0), // Send after 1 second
-                                &SendMulticastPacket,
-                                source,
-                                m_packetSize,
-                                multicastGroup,
-                                remote); */
+    Simulator::Schedule(Seconds(3.0), // Send after 3 second
+                        &SendMulticastPacket,
+                        source,
+                        m_packetSize,
+                        multicastGroup,
+                        remote); 
 
-    /*  Simulator::Schedule(Seconds(3.0), // Send after 3 second
-                         &SendMulticastPacket,
-                         source,
-                         m_packetSize,
-                         multicastGroup,
-                         remote);  */
-}
+/*     Simulator::Schedule(Seconds(5.0), // Send after 5 second
+                        &SendMulticastPacket,
+                        source,
+                        m_packetSize,
+                        multicastGroup,
+                        remote);*/
+} 
 
 int
 MeshTest::Run()
@@ -619,12 +619,12 @@ MeshTest::Run()
     // LogComponentEnable("UdpSocketImpl", LOG_LEVEL_ALL);
     // LogComponentEnable("UdpL4Protocol", LOG_LEVEL_ALL);
     // LogComponentEnable("Ipv4L3Protocol", LOG_LEVEL_ALL);
-     LogComponentEnable("HwmpProtocol", LOG_LEVEL_ALL);
+    LogComponentEnable("HwmpProtocol", LOG_LEVEL_ALL);
     // LogComponentEnable("MeshPointDevice", LOG_LEVEL_ALL);
     // LogComponentEnable("YansWifiPhy", LOG_LEVEL_ALL);
     // LogComponentEnable("PeerManagementProtocol", LOG_LEVEL_ALL);
      LogComponentEnable("HwmpProtocolMac", LOG_LEVEL_ALL);
-    //LogComponentEnable("MeshWifiInterfaceMac", LOG_LEVEL_ALL);
+    // LogComponentEnable("MeshWifiInterfaceMac", LOG_LEVEL_ALL);
 
     CreateNodes();
     InstallInternetStack();
