@@ -283,7 +283,6 @@ class HwmpProtocol : public MeshL2RoutingProtocol
     void PurgeOldPrunes(); // the function that will actually scan & delete old entries
     bool IsPruned(Mac48Address src, Mac48Address dst, Mac48Address multicastGroup) const;
 
-    void ScheduleNextPrune(); // helper to schedule the next prune pass
 
     static std::set<Mac48Address> m_multicastGroupNodes; // set of multicast group nodes
     // key = (originator, multicastGroup)
@@ -293,6 +292,8 @@ class HwmpProtocol : public MeshL2RoutingProtocol
                  Mac48Address nextHop,
                  uint32_t interfaceIndex,
                  Mac48Address group);
+
+    void ExpirePruneEntry(Mac48Address src, Mac48Address dst, Mac48Address multicastGroup);
 
     // End of new code
 

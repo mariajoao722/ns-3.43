@@ -201,10 +201,7 @@ HwmpProtocol::DoInitialize()
         m_proactivePreqTimer =
             Simulator::Schedule(randomStart, &HwmpProtocol::SendProactivePreq, this);
     }
-    // new
-    //  Start periodic purge for soft-state prune table
-    ScheduleNextPrune();
-    // end
+
 }
 
 void
@@ -376,14 +373,23 @@ void
 HwmpProtocol::AddPruneEntry(Mac48Address src, Mac48Address dst, Mac48Address multicastGroup)
 {
     m_pruneTable[{src, dst, multicastGroup}] = Simulator::Now();
+
+    // schedule a one-shot event to remove it in m_pruneTimeout
+    Simulator::Schedule(m_pruneTimeout,
+                        &HwmpProtocol::ExpirePruneEntry,
+                        this,
+                        src,
+                        dst,
+                        multicastGroup);
 }
 
 void
-HwmpProtocol::ScheduleNextPrune()
+HwmpProtocol::ExpirePruneEntry(Mac48Address src, Mac48Address dst, Mac48Address multicastGroup)
 {
-    // fire PurgeOldPrunes() in 1 second from now
-    m_pruneEvent = Simulator::Schedule(Seconds(1.0), &HwmpProtocol::PurgeOldPrunes, this);
+    // remove from the table and forget the EventId
+    m_pruneTable.erase({src, dst, multicastGroup});
 }
+
 
 void
 HwmpProtocol::PurgeOldPrunes()
@@ -401,7 +407,6 @@ HwmpProtocol::PurgeOldPrunes()
             ++it;
         }
     }
-    ScheduleNextPrune(); // reschedule the next purge
 }
 
 bool
@@ -1285,9 +1290,7 @@ HwmpProtocol::OnMacTx(Ptr<const Packet> packet,
         return;
     }
 
-
     // Otherwise, it’s packet #2 or later → prune
-
 
     // Check if the Next hop is a downstream or  upstream node
     auto ttl = tag.GetTtl(); // Get the TTL from the tag
@@ -1300,21 +1303,20 @@ HwmpProtocol::OnMacTx(Ptr<const Packet> packet,
     else if (ttl > m_nodeAvgTtl + std::sqrt(m_nodeVarTtl))
     {
         NS_LOG_DEBUG("Next hop " << nextHop << " is an upstream node; ");
-       /*  std::vector<std::pair<Mac48Address, uint32_t>> entries;
-        entries.emplace_back(GetAddress(), PRUNE_REASON_NOT_INTERESTED);
-        SendPrune(entries, // entries
-                  nextHop, // receiver
-                  interfaceIndex,
-                  group,
-                  1); */
-    } else if (ttl == m_nodeAvgTtl + std::sqrt(m_nodeVarTtl))
+        /*  std::vector<std::pair<Mac48Address, uint32_t>> entries;
+         entries.emplace_back(GetAddress(), PRUNE_REASON_NOT_INTERESTED);
+         SendPrune(entries, // entries
+                   nextHop, // receiver
+                   interfaceIndex,
+                   group,
+                   1); */
+    }
+    else if (ttl == m_nodeAvgTtl + std::sqrt(m_nodeVarTtl))
     {
         NS_LOG_DEBUG("Next hop " << nextHop << " is at the same level; ");
-
     }
 
-
-    //Fazer só este check quando recebo uma mensagem de prune, ou seja, na função receive prune???
+    // Fazer só este check quando recebo uma mensagem de prune, ou seja, na função receive prune???
     auto g = GetMulticastGroupNodes();
     // If the next hop is not in the multicast group, we can prune it
     if (g.find(nextHop) == g.end() && g.find(GetAddress()) == g.end())
