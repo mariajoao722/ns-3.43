@@ -308,6 +308,10 @@ MeshPointDevice::Send(Ptr<Packet> packet, const Address& dest, uint16_t protocol
                                            packet,
                                            protocolNumber,
                                            MakeCallback(&MeshPointDevice::DoSend, this));
+
+                                           
+    NS_LOG_DEBUG("MeshPointDevice::Send: m_routingProtocol=" << m_routingProtocol);
+
 }
 
 bool

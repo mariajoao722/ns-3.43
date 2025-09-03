@@ -103,6 +103,18 @@ IePrune::GetGroup() const
 }
 
 void
+IePrune::SetOriginator(Mac48Address originator)
+{
+    m_originator = originator;
+}
+
+Mac48Address
+IePrune::GetOriginator() const
+{
+    return m_originator;
+}
+
+void
 IePrune::SerializeInformationField(Buffer::Iterator i) const
 {
     for (const auto& unit : m_pruneUnits)

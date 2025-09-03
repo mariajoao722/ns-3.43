@@ -471,6 +471,7 @@ MeshWifiInterfaceMac::Receive(Ptr<const WifiMpdu> mpdu, uint8_t linkId)
     // Forward data up
     if (hdr->IsData())
     {
+        Mac48Address addr2 = hdr->GetAddr2();
         ForwardUp(packet, hdr->GetAddr4(), hdr->GetAddr3());
     }
 

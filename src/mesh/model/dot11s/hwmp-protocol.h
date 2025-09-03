@@ -39,6 +39,7 @@ class HwmpRtable;
 class IePerr;
 class IePreq;
 class IePrep;
+class IePrune;
 
 /**
  * Structure to encapsulate route change information
@@ -240,7 +241,10 @@ class HwmpProtocol : public MeshL2RoutingProtocol
     void SetDevice(Ptr<MeshPointDevice> device);
 
     /// Return the peers we saw when we last called RequestRoute()
-    const std::set<Mac48Address>& GetLastActivePeerAddresses() const;
+    const std::map<Mac48Address, uint32_t>& GetLastActivePeerAddresses() const;
+
+    /// Return the status of a specific peer address
+    uint32_t GetPeerStatus(Mac48Address peer) const;
 
     /// Start a periodic check every `interval` seconds
     void StartLinkMonitor(Time interval);
@@ -256,8 +260,10 @@ class HwmpProtocol : public MeshL2RoutingProtocol
 
     // NEW NEW CODE
     Ptr<MeshPointDevice> m_device;
-    // after your existing members
-    std::set<Mac48Address> m_lastActivePeerAddrs; // what was up when we last requested a route
+
+    // This map stores the last active peer addresses and their status
+    // 0 - bellow, 1 - above, 2 - at the same level
+    std::map<Mac48Address, uint32_t> m_lastActivePeerAddrs;
 
     // snapshot storage (no duplicates)
     std::set<Mac48Address> m_activePeers;
@@ -280,21 +286,25 @@ class HwmpProtocol : public MeshL2RoutingProtocol
     EventId m_pruneEvent; // event handle for our recurring prune task
 
     void AddPruneEntry(Mac48Address src, Mac48Address dst, Mac48Address multicastGroup);
-    void PurgeOldPrunes(); // the function that will actually scan & delete old entries
-    bool IsPruned(Mac48Address src, Mac48Address dst, Mac48Address multicastGroup) const;
 
+    bool IsPruned(Mac48Address src, Mac48Address dst, Mac48Address multicastGroup) const;
 
     static std::set<Mac48Address> m_multicastGroupNodes; // set of multicast group nodes
     // key = (originator, multicastGroup)
     std::map<std::pair<Mac48Address, Mac48Address>, bool> m_seenFirstMulticast;
 
-    void OnMacTx(Ptr<const Packet> packet,
-                 Mac48Address nextHop,
-                 uint32_t interfaceIndex,
-                 Mac48Address group);
+    void StartPrune(Ptr<const Packet> packet,
+                    Mac48Address transmitter,
+                    Mac48Address source,
+                    uint32_t interfaceIndex,
+                    Mac48Address group);
 
     void ExpirePruneEntry(Mac48Address src, Mac48Address dst, Mac48Address multicastGroup);
 
+
+    void PeerLinks();
+
+    uint32_t m_RxPacketCount = 0;
     // End of new code
 
     void DoInitialize() override;
@@ -400,7 +410,8 @@ class HwmpProtocol : public MeshL2RoutingProtocol
      * \param fromMp the from MP address
      * \param multicastGroup the multicast group address
      */
-    void ReceivePrune(const std::vector<std::pair<Mac48Address, uint32_t>>& pruneUnits,
+    void ReceivePrune(IePrune prune,
+                      const std::vector<std::pair<Mac48Address, uint32_t>>& pruneUnits,
                       Mac48Address from,
                       uint32_t interface,
                       Mac48Address fromMp);
@@ -431,6 +442,7 @@ class HwmpProtocol : public MeshL2RoutingProtocol
                    Mac48Address receiver,
                    uint32_t interface,
                    Mac48Address multicastGroup,
+                   Mac48Address originator,
                    uint8_t ttl = 1);
 
     // end

@@ -172,14 +172,15 @@ HwmpProtocol::HwmpProtocol()
       m_unicastDataThreshold(1),
       m_doFlag(false),
       m_rfFlag(false),
-      m_firstTtlStored(false),    // new
-      m_firstReceivedTtl(0),      // new
-      m_nodeTtlSum(0),            // new
-      m_nodeTtlCount(0),          // new
-      m_nodeAvgTtl(0.0),          // new
-      m_alpha(0.2),               // new
-      m_nodeVarTtl(0.0),          // new
-      m_pruneTimeout(Seconds(10)) // new
+      m_firstTtlStored(false), // new
+      m_firstReceivedTtl(0),   // new
+      m_nodeTtlSum(0),         // new
+      m_nodeTtlCount(0),       // new
+      m_nodeAvgTtl(0.0),       // new
+      m_alpha(0.2),            // new
+      m_nodeVarTtl(0.0),       // new
+      m_pruneTimeout(Seconds(3)),
+      m_device(nullptr) // new
 {
     NS_LOG_FUNCTION(this);
     m_coefficient = CreateObject<UniformRandomVariable>();
@@ -201,7 +202,6 @@ HwmpProtocol::DoInitialize()
         m_proactivePreqTimer =
             Simulator::Schedule(randomStart, &HwmpProtocol::SendProactivePreq, this);
     }
-
 }
 
 void
@@ -268,29 +268,6 @@ void
 HwmpProtocol::SetDevice(Ptr<MeshPointDevice> device)
 {
     m_device = device;
-    /*  Ptr<PeerManagementProtocol> pmp = device->GetObject<PeerManagementProtocol>();
-     if (!pmp)
-         return;
-
-     // --- **NEW**: initial seed of active peers
-     for (auto link : pmp->GetPeerLinks())
-     {
-         m_activePeers.insert(link->GetPeerAddress());
-     }
-
-     // --- **NEW**: schedule the first link check
-     if (m_linkCheckInterval.GetSeconds() > 0)
-     {
-         m_linkCheckEvent =
-             Simulator::Schedule(m_linkCheckInterval, &HwmpProtocol::DoLinkCheck, this);
-     }
-
-     NS_LOG_DEBUG("Last active peer addresses:");
-     for (const auto& addr : m_lastActivePeerAddrs)
-     {
-         NS_LOG_DEBUG("Address: " << addr);
-     }
-     NS_LOG_DEBUG("END LAST ACTIVE PEER ADDRESSES"); */
 }
 
 std::vector<Ptr<PeerLink>>
@@ -320,10 +297,35 @@ HwmpProtocol::IsPeerLinkActive(uint32_t interface, Mac48Address peer) const
     return pmp->IsActiveLink(interface, peer);
 }
 
-const std::set<Mac48Address>&
+const std::map<Mac48Address, uint32_t>&
 HwmpProtocol::GetLastActivePeerAddresses() const
 {
     return m_lastActivePeerAddrs;
+}
+
+void
+HwmpProtocol::PeerLinks()
+{
+    // --- Active peer links ---
+    // Get the active peer links from the PeerManagementProtocol
+    // and build HWMP path requests toward each peer.
+    auto links = GetActivePeerLinks();
+    for (auto link : links)
+    {
+        Mac48Address peer = link->GetPeerAddress();
+        if (m_lastActivePeerAddrs.find(peer) == m_lastActivePeerAddrs.end())
+        {
+            m_lastActivePeerAddrs[peer] = 0;
+        }
+    }
+
+    // print the m_lastActivePeerAddrs vector
+    NS_LOG_DEBUG("Last active peer addresses:");
+    for (const auto& addr : m_lastActivePeerAddrs)
+    {
+        NS_LOG_DEBUG("Address: " << addr);
+    }
+    NS_LOG_DEBUG("END LAST ACTIVE PEER ADDRESSES");
 }
 
 void
@@ -372,6 +374,8 @@ HwmpProtocol::DoLinkCheck()
 void
 HwmpProtocol::AddPruneEntry(Mac48Address src, Mac48Address dst, Mac48Address multicastGroup)
 {
+    NS_LOG_INFO("Adding prune entry for src: " << src << ", dst: " << dst
+                                               << ", multicastGroup: " << multicastGroup);
     m_pruneTable[{src, dst, multicastGroup}] = Simulator::Now();
 
     // schedule a one-shot event to remove it in m_pruneTimeout
@@ -386,32 +390,16 @@ HwmpProtocol::AddPruneEntry(Mac48Address src, Mac48Address dst, Mac48Address mul
 void
 HwmpProtocol::ExpirePruneEntry(Mac48Address src, Mac48Address dst, Mac48Address multicastGroup)
 {
+    NS_LOG_INFO("Expiring prune entry for src: " << src << ", dst: " << dst
+                                                 << ", multicastGroup: " << multicastGroup);
     // remove from the table and forget the EventId
     m_pruneTable.erase({src, dst, multicastGroup});
-}
-
-
-void
-HwmpProtocol::PurgeOldPrunes()
-{
-    Time now = Simulator::Now();
-
-    for (auto it = m_pruneTable.begin(); it != m_pruneTable.end();)
-    {
-        if (now - it->second > m_pruneTimeout)
-        {
-            it = m_pruneTable.erase(it);
-        }
-        else
-        {
-            ++it;
-        }
-    }
 }
 
 bool
 HwmpProtocol::IsPruned(Mac48Address src, Mac48Address dst, Mac48Address multicastGroup) const
 {
+    NS_LOG_FUNCTION(this << src << dst << multicastGroup);
     auto it = m_pruneTable.find({src, dst, multicastGroup});
     return (it != m_pruneTable.end());
 }
@@ -478,37 +466,19 @@ HwmpProtocol::RequestRoute(uint32_t sourceIface,
     }
     if (destination.IsGroup())
     {
+        Mac48Address transmitter = tag.GetAddress();
+        // print transmitter
+        NS_LOG_DEBUG("Transmitter: " << transmitter);
+
         m_stats.txBroadcast++;
         m_stats.txBytes += packet->GetSize();
         NS_LOG_DEBUG("ENTROUUUU");
         NS_LOG_DEBUG("CURRENT NODE: " << GetAddress());
 
-        // --- Active peer links ---
-        // Get the active peer links from the PeerManagementProtocol
-        // and build HWMP path requests toward each peer.
-        auto links = GetActivePeerLinks();
-        for (auto link : links)
-        {
-            Mac48Address peer = link->GetPeerAddress();
-            m_lastActivePeerAddrs.insert(peer);
-        }
-
-        // print the m_lastActivePeerAddrs vector
-        NS_LOG_DEBUG("Last active peer addresses:");
-        for (const auto& addr : m_lastActivePeerAddrs)
-        {
-            NS_LOG_DEBUG("Address: " << addr);
-        }
-        NS_LOG_DEBUG("END LAST ACTIVE PEER ADDRESSES");
-
+        m_RxPacketCount++;
         // --- TTL vs Hop comparison for multicast ---
 
         uint8_t ttl = tag.GetTtl();
-
-        // update node-wide running total & count
-        /* m_nodeTtlSum += ttl;
-        m_nodeTtlCount++;
-        m_nodeAvgTtl = double(m_nodeTtlSum) / m_nodeTtlCount; */
 
         // --- EWMA update of avgTTL and sigma² ---
         if (m_nodeTtlCount == 0)
@@ -529,16 +499,45 @@ HwmpProtocol::RequestRoute(uint32_t sourceIface,
             m_nodeVarTtl += m_alpha * (diff * diff - m_nodeVarTtl);
             m_nodeTtlCount++;
 
-            m_nodeAvgTtl = (1 - m_alpha) * m_nodeAvgTtl + m_alpha * ttl;
+            // m_nodeAvgTtl = (1 - m_alpha) * m_nodeAvgTtl + m_alpha * ttl;
         }
 
-        double sigma = std::sqrt(m_nodeVarTtl);
+        double sigma;
 
-        NS_LOG_INFO("[HWMP] Node " << GetAddress() << " EWMA avgTTL=" << m_nodeAvgTtl
-                                   << ", σ=" << sigma);
         NS_LOG_INFO("[HWMP] Node "
                     << GetAddress() << " updated node-level average TTL = " << m_nodeAvgTtl
                     << " (sum=" << m_nodeTtlSum << ", count=" << m_nodeTtlCount << ")");
+
+        std::string relativePosition;
+        const uint32_t kMinSamplesForVariance = 3;
+
+        if (m_nodeTtlCount >= kMinSamplesForVariance)
+        {
+            // Calculate the standard deviation (sigma) for the node's TTL
+            sigma = std::sqrt(m_nodeVarTtl);
+            if (ttl > m_nodeAvgTtl + sigma)
+            {
+                relativePosition = "ACIMA"; // upstream (fewer hops)
+            }
+            else if (ttl < m_nodeAvgTtl - sigma)
+            {
+                relativePosition = "ABAIXO"; // downstream (more hops)
+            }
+            else
+            {
+                relativePosition = "MESMO NÍVEL"; // same level (within noise)
+            }
+
+            NS_LOG_INFO("[HWMP Multicast Metrics] Node "
+                        << GetAddress() << " recv TTL=" << uint32_t(ttl) << " vs avgTTL="
+                        << m_nodeAvgTtl << " (σ=" << sigma << ") → " << relativePosition);
+        }
+        else
+        {
+            NS_LOG_INFO("[HWMP Multicast Metrics] Node "
+                        << GetAddress() << " recv TTL=" << uint32_t(ttl)
+                        << " but σ is not estimated yet (samples=" << m_nodeTtlCount << ")");
+        }
 
         // --- update per-sender EWMA ---
         // Usamos 'source' (endereço do remetente) como chave para identificar o nó
@@ -570,6 +569,11 @@ HwmpProtocol::RequestRoute(uint32_t sourceIface,
             metric.count++;
         }
 
+        if (metric.count >= kMinSamplesForVariance)
+        {
+            double sigmaSender = std::sqrt(metric.ewmaVarTtl);
+        }
+
         // log per-sender EWMA
 
         NS_LOG_INFO("[HWMP Per-Sender Metrics] Node "
@@ -580,17 +584,6 @@ HwmpProtocol::RequestRoute(uint32_t sourceIface,
         uint8_t originalTtl = m_maxTtl;
         uint8_t hopCount = originalTtl - ttl;
         NS_LOG_DEBUG("ORIGINAL TTL: " << (uint32_t)originalTtl);
-        /*
-                // Usamos 'source' (endereço do remetente) como chave para identificar o nó
-                Mac48Address sender = source; */
-
-        /* // If the sender is in the pruned list, drop the packet immediately.
-        if (m_prunedNodes.find(sender) != m_prunedNodes.end())
-        {
-            NS_LOG_INFO("[HWMP] Node " << GetAddress() << " already pruned sender " << sender
-                                       << ". Ignoring packet.");
-            return false; // Drop the packet.
-        } */
 
         // Now, if this is the very first packet received by the node, store this TTL.
         // Only store the TTL if the sender is not this node.
@@ -619,52 +612,6 @@ HwmpProtocol::RequestRoute(uint32_t sourceIface,
         NS_LOG_INFO("[HWMP Multicast Metrics] Node "
                     << GetAddress() << " recebeu multicast de " << sender << " com TTL="
                     << (uint32_t)ttl << " (estimated hop count = " << (uint32_t)hopCount << ")");
-
-        std::string relativePosition;
-        /* if (ttl > m_firstReceivedTtl)
-        {
-            relativePosition = "ACIMA";
-        }
-        else if (ttl < m_firstReceivedTtl)
-        {
-            relativePosition = "ABAIXO";
-        }
-        else
-        {
-            relativePosition = "MESMO NÍVEL";
-        } */
-
-        if (ttl > m_nodeAvgTtl + sigma)
-        {
-            relativePosition = "ACIMA"; // upstream (fewer hops)
-        }
-        else if (ttl < m_nodeAvgTtl - sigma)
-        {
-            relativePosition = "ABAIXO"; // downstream (more hops)
-        }
-        else
-        {
-            relativePosition = "MESMO NÍVEL"; // same level (within noise)
-        }
-
-        NS_LOG_INFO("[HWMP Multicast Metrics] Node "
-                    << GetAddress() << " recv TTL=" << uint32_t(ttl) << " vs avgTTL="
-                    << m_nodeAvgTtl << " (σ=" << sigma << ") → " << relativePosition);
-
-        // If the sender is determined to be "ABAIXO", perform pruning:
-        // we simply drop the packet.
-        /* if (relativePosition == "ABAIXO")
-        {
-            NS_LOG_INFO("[HWMP Multicast Metrics] Node "
-                        << GetAddress() << " prunes sender " << sender
-                        << " (received TTL = " << (uint32_t)ttl
-                        << " > first received TTL = " << (uint32_t)m_firstReceivedTtl << ").");
-
-            // Add the sender to the pruned list so that future packets are ignored.
-            m_prunedNodes.insert(sender);
-            // Drop the packet since the sender is pruned.
-            return false;
-        } */
 
         // --- End of TTL vs Hop comparison for multicast ---
 
@@ -705,28 +652,62 @@ HwmpProtocol::RequestRoute(uint32_t sourceIface,
 
             for (auto i = receivers.begin(); i != receivers.end(); i++)
             {
-                /* if(nextnode pertece lista nós com interesse){
-                        forward logic
-                } else if(next_node quer dar forwandind){
-                        forward logic
-                } else {
-                        no forwarding
-                }*/
-
-                // APlicar as funçoes de prune em cima criadas e usar o resultados dos active peer
-                // links para saber o addr dos receivers
-                /* for (const auto& addr : m_lastActivePeerAddrs)
-                 {
-                     if (IsPruned(source, addr))
-                     {
-                         NS_LOG_DEBUG("Prune active for " << source << " -> " << addr
-                                                          << ". Dropping packet.");
-                         return;
-                     }
-                 }  */
-
                 // Forward the packet to all receivers:
                 Ptr<Packet> packetCopy = packet->Copy();
+
+                // See if all the peer links are pruned for this multicast group
+                auto peerlinks = GetLastActivePeerAddresses();
+                uint16_t prunedCount = 0;
+                uint16_t peerCount = 0;
+                for (const auto& entry : peerlinks)
+                {
+                    Mac48Address peer = entry.first;
+                    if (entry.second == 0) // peer is bellow
+                    {
+                        peerCount++;
+                        if (IsPruned(GetAddress(), peer, destination))
+                        {
+                            NS_LOG_DEBUG("Prune active for " << GetAddress() << " -> " << peer
+                                                             << " for multicast group "
+                                                             << destination
+                                                             << ". Dropping packet.");
+                            prunedCount++;
+                        }
+                    }
+                }
+
+                NS_LOG_DEBUG("Pruned count: " << prunedCount
+                                              << ", total peer links down: " << peerCount);
+
+                if (m_RxPacketCount <= 2)
+                {
+                    NS_LOG_DEBUG("Skip prune for the two first packets");
+                }
+                else
+                {
+                    if (prunedCount == peerCount)
+                    {
+                        if (GetAddress() == "00:00:00:00:00:01" && peerlinks.size() == 0)
+                        {
+                            NS_LOG_DEBUG("Skip prune");
+                        }
+                        else
+                        {
+                            NS_LOG_DEBUG("All peer links pruned for multicast group "
+                                         << destination << ". Dropping packet.");
+                            routeReply(false,
+                                       packetCopy,
+                                       source,
+                                       destination,
+                                       protocolType,
+                                       plugin->first);
+                            continue;
+                        }
+                    }
+                }
+
+                // Forward the packet to all receivers:
+                // Ptr<Packet> packetCopy = packet->Copy();
                 //
                 // 64-bit Intel valgrind complains about tag.SetAddress (*i).  It
                 // likes this just fine.
@@ -735,7 +716,6 @@ HwmpProtocol::RequestRoute(uint32_t sourceIface,
                 tag.SetAddress(address);
                 packetCopy->AddPacketTag(tag);
                 NS_LOG_DEBUG("Sending route reply for broadcast; address " << address);
-                NS_LOG_DEBUG("AQUIIIIIIIIIIIIIIII");
                 NS_LOG_INFO("Forwarding multicast packet from node " << GetAddress()
                                                                      << " to receiver " << address);
                 volatile Mac48Address src48 = source;
@@ -753,8 +733,6 @@ HwmpProtocol::RequestRoute(uint32_t sourceIface,
                               routeReply,
                               tag.GetTtl());
     }
-
-    NS_LOG_DEBUG("ACABOUUUUUUUUUUUUUU");
 
     return true;
 }
@@ -1197,7 +1175,8 @@ HwmpProtocol::ReceivePerr(std::vector<FailedDestination> destinations,
 
 // new
 void
-HwmpProtocol::ReceivePrune(const std::vector<std::pair<Mac48Address, uint32_t>>& pruneUnits,
+HwmpProtocol::ReceivePrune(IePrune prune,
+                           const std::vector<std::pair<Mac48Address, uint32_t>>& pruneUnits,
                            Mac48Address from,
                            uint32_t interface,
                            Mac48Address fromMp)
@@ -1212,7 +1191,7 @@ HwmpProtocol::ReceivePrune(const std::vector<std::pair<Mac48Address, uint32_t>>&
 
         NS_LOG_INFO("Received PRUNE for destination " << destination << " with reason " << reason);
 
-        AddPruneEntry(from, destination, fromMp);
+        AddPruneEntry(GetAddress(), destination, fromMp);
     }
 }
 
@@ -1248,6 +1227,7 @@ HwmpProtocol::SendPrune(std::vector<std::pair<Mac48Address, uint32_t>>& entries,
                         Mac48Address receiver,
                         uint32_t interface,
                         Mac48Address multicastGroup,
+                        Mac48Address originator,
                         uint8_t ttl)
 {
     NS_LOG_FUNCTION(this << entries << receiver << interface << ttl);
@@ -1258,30 +1238,35 @@ HwmpProtocol::SendPrune(std::vector<std::pair<Mac48Address, uint32_t>>& entries,
     prune.SetInterface(interface);
     prune.SetTtl(ttl);
     prune.SetGroup(multicastGroup);
+    prune.SetOriginator(originator);
     auto prune_sender = m_interfaces.find(interface);
     NS_ASSERT(prune_sender != m_interfaces.end());
     prune_sender->second->SendPrune(prune, receiver);
 }
 
 void
-HwmpProtocol::OnMacTx(Ptr<const Packet> packet,
-                      Mac48Address nextHop,
-                      uint32_t interfaceIndex,
-                      Mac48Address group)
+HwmpProtocol::StartPrune(Ptr<const Packet> packet,
+                         Mac48Address transmitter,
+                         Mac48Address source,
+                         uint32_t interfaceIndex,
+                         Mac48Address group)
 {
-    NS_LOG_FUNCTION(this << packet << nextHop << interfaceIndex);
+    NS_LOG_FUNCTION(this << packet << transmitter << source << interfaceIndex);
+
+    PeerLinks();
     // Peek the HWMP tag to see who the originator and the group are
     HwmpTag tag;
     if (!packet->PeekPacketTag(tag))
         return;
 
-    NS_LOG_DEBUG("OnMacTx: NextHop" << nextHop << ", group=" << group);
+    NS_LOG_DEBUG("StartPrune: Transmitter" << transmitter << ", Source=" << source
+                                           << ", group=" << group);
 
     if (!group.IsGroup())
         return; // only prune on multicasts
 
-    auto key = std::make_pair(nextHop, group);
-    auto it = std::make_tuple(nextHop, group, GetAddress());
+    auto key = std::make_pair(transmitter, group);
+    auto it = std::make_tuple(transmitter, group, GetAddress());
 
     // If it’s the very first packet, just mark it seen
     if (!m_seenFirstMulticast[key])
@@ -1292,54 +1277,66 @@ HwmpProtocol::OnMacTx(Ptr<const Packet> packet,
 
     // Otherwise, it’s packet #2 or later → prune
 
-    // Check if the Next hop is a downstream or  upstream node
+    // Check if the Transmitter is a downstream or  upstream node
     auto ttl = tag.GetTtl(); // Get the TTL from the tag
     if (ttl < m_nodeAvgTtl + std::sqrt(m_nodeVarTtl))
     {
-        NS_LOG_DEBUG("Next hop " << nextHop << " is a downstream node; ");
-
+        NS_LOG_DEBUG("Transmitter " << transmitter << " is bellow the current node; ");
+        m_lastActivePeerAddrs[transmitter] = 0;
         return;
     }
     else if (ttl > m_nodeAvgTtl + std::sqrt(m_nodeVarTtl))
     {
-        NS_LOG_DEBUG("Next hop " << nextHop << " is an upstream node; ");
-        /*  std::vector<std::pair<Mac48Address, uint32_t>> entries;
-         entries.emplace_back(GetAddress(), PRUNE_REASON_NOT_INTERESTED);
-         SendPrune(entries, // entries
-                   nextHop, // receiver
-                   interfaceIndex,
-                   group,
-                   1); */
+        NS_LOG_DEBUG("Transmitter " << transmitter << " is above the current node; ");
+        m_lastActivePeerAddrs[transmitter] = 1;
     }
     else if (ttl == m_nodeAvgTtl + std::sqrt(m_nodeVarTtl))
     {
-        NS_LOG_DEBUG("Next hop " << nextHop << " is at the same level; ");
+        NS_LOG_DEBUG("Transmitter " << transmitter << " is at the same level; ");
+        m_lastActivePeerAddrs[transmitter] = 2;
     }
 
-    // Fazer só este check quando recebo uma mensagem de prune, ou seja, na função receive prune???
-    auto g = GetMulticastGroupNodes();
-    // If the next hop is not in the multicast group, we can prune it
-    if (g.find(nextHop) == g.end() && g.find(GetAddress()) == g.end())
+    if (IsPruned(transmitter, GetAddress(), group))
     {
-        NS_LOG_DEBUG("Next hop " << nextHop << " is not in the multicast group; pruning.");
+        NS_LOG_DEBUG("Prune active for " << transmitter << " -> " << GetAddress());
+    }
+    else
+    {
+        // Fazer só este check quando recebo uma mensagem de prune, ou seja, na função receive
+        // prune???
+        auto g = GetMulticastGroupNodes();
+        // print g
+        NS_LOG_DEBUG("Multicast group nodes: ");
+        for (const auto& node : g)
+        {
+            NS_LOG_DEBUG("Node: " << node);
+        }
+        // if transmitter is in the multicast group, we do not prune
+        if (g.find(transmitter) != g.end())
+        {
+            NS_LOG_DEBUG("Transmitter " << transmitter
+                                        << " is in the multicast group; not pruning.");
+            return;
+        }
+        else if (g.find(transmitter) == g.end() &&
+                 g.find(GetAddress()) ==
+                     g.end()) // If the transmitter is not in the multicast group, we can prune it
+        {
+            NS_LOG_DEBUG("Transmitter " << transmitter
+                                        << " is not in the multicast group; pruning.");
 
-        std::vector<std::pair<Mac48Address, uint32_t>> entries;
-        entries.emplace_back(GetAddress(), PRUNE_REASON_NOT_INTERESTED);
-        SendPrune(entries, // entries
-                  nextHop, // receiver
-                  interfaceIndex,
-                  group,
-                  1);
+            std::vector<std::pair<Mac48Address, uint32_t>> entries;
+            entries.emplace_back(GetAddress(), PRUNE_REASON_NOT_INTERESTED);
+            SendPrune(entries,     // entries
+                      transmitter, // receiver
+                      interfaceIndex,
+                      group,
+                      source, // originator
+                      1);
+        }
     }
 
-    std::vector<std::pair<Mac48Address, uint32_t>> entries;
-    entries.emplace_back(GetAddress(), PRUNE_REASON_NOT_INTERESTED);
-    SendPrune(entries, // entries
-              nextHop, // receiver
-              interfaceIndex,
-              group,
-              1);
-    NS_LOG_INFO("Auto-pruning " << nextHop << " for flow Node0" << "→" << group);
+    NS_LOG_INFO("Auto-pruning " << transmitter << " for flow Node0" << " → " << group);
 }
 
 // end

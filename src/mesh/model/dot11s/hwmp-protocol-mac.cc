@@ -70,11 +70,13 @@ HwmpProtocolMac::ReceiveData(Ptr<Packet> packet, const WifiMacHeader& header)
     /// \todo address extension
     Mac48Address destination;
     Mac48Address source;
+    Mac48Address transmitter;
     switch (meshHdr.GetAddressExt())
     {
     case 0:
         source = header.GetAddr4();
         destination = header.GetAddr3();
+        transmitter = header.GetAddr2();
         break;
     default:
         NS_FATAL_ERROR("6-address scheme is not yet supported and 4-address extension is not "
@@ -84,7 +86,6 @@ HwmpProtocolMac::ReceiveData(Ptr<Packet> packet, const WifiMacHeader& header)
     tag.SetTtl(meshHdr.GetMeshTtl());
     packet->AddPacketTag(tag);
 
-
     if (((destination.IsGroup()) && (m_protocol->DropDataFrame(meshHdr.GetMeshSeqno(), source))))
     {
         NS_LOG_DEBUG("Dropping frame; source " << source << " dest " << destination << " seqno "
@@ -92,9 +93,17 @@ HwmpProtocolMac::ReceiveData(Ptr<Packet> packet, const WifiMacHeader& header)
         return false;
     }
     NS_LOG_INFO("HwmpProtocolMac::ReceiveData: Received data frame from "
-                << source << " to " << destination << " current node " << m_protocol->GetAddress());
+                << source << " to " << destination << " current node " << m_protocol->GetAddress()
+                << " transmitter " << transmitter);
 
-    m_protocol->OnMacTx(packet, source, 1, destination);
+ /*    if (m_protocol->IsPruned(transmitter, m_protocol->GetAddress(), destination))
+    {
+        NS_LOG_DEBUG("HwmpProtocolMac::ReceiveData: Pruned link, dropping frame");
+
+        return false;
+    } */
+
+    m_protocol->StartPrune(packet, transmitter, source, 1, destination);
 
     return true;
 }
@@ -176,7 +185,8 @@ HwmpProtocolMac::ReceiveAction(Ptr<Packet> packet, const WifiMacHeader& header)
             NS_ASSERT(prune);
             m_stats.rxPrune++; // Adiciona esse campo à tua estrutura de estatísticas
 
-            m_protocol->ReceivePrune(prune->GetPruneUnits(),
+            m_protocol->ReceivePrune(*prune,
+                                     prune->GetPruneUnits(),
                                      header.GetAddr2(),
                                      m_ifIndex,
                                      header.GetAddr3());
@@ -375,7 +385,9 @@ HwmpProtocolMac::SendPrune(IePrune prune, Mac48Address receiver)
     /*
     addr1	Destino final da frame (quem vai receber)
     addr2	Origem imediata (quem está a enviar agora)
-    addr3	Identificador lógico (grupo multicast) */
+    addr3	Identificador lógico (grupo multicast)
+    addr4	Originador do pacote (quem originou a frame)
+    */
     NS_LOG_FUNCTION(this << receiver);
     // Create packet
     Ptr<Packet> packet = Create<Packet>();
@@ -394,6 +406,9 @@ HwmpProtocolMac::SendPrune(IePrune prune, Mac48Address receiver)
     NS_LOG_DEBUG("HwmpProtocolMac::SendPrune: addr2 = " << m_parent->GetAddress());
     hdr.SetAddr3(prune.GetGroup());
     NS_LOG_DEBUG("HwmpProtocolMac::SendPrune: addr3 = " << prune.GetGroup());
+    hdr.SetAddr4(prune.GetOriginator());
+    NS_LOG_DEBUG("HwmpProtocolMac::SendPrune: addr4 = " << prune.GetOriginator());
+
     // Send Management frame
     m_stats.txPrune++;
     m_stats.txMgt++;

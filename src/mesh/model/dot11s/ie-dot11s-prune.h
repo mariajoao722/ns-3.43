@@ -67,6 +67,15 @@ class IePrune : public WifiInformationElement
     void SetGroup(Mac48Address group);
     Mac48Address GetGroup() const;
 
+    /**
+     * \brief Set the originator of the Packet
+     * \param originator The MAC address of the originator
+     *
+     * This is used to identify which node initiated the Packet
+     */
+    void SetOriginator(Mac48Address originator);
+    Mac48Address GetOriginator() const;
+
     // Inherited from WifiInformationElement
     WifiInformationElementId ElementId() const override;
     void SerializeInformationField(Buffer::Iterator i) const override;
@@ -81,6 +90,7 @@ class IePrune : public WifiInformationElement
     uint32_t m_interface;    //!< Interface index used to send PRUNE
     uint8_t m_ttl;           //!< TTL value of PRUNE message
     Mac48Address m_group;    //!< Group address for multicast pruning
+    Mac48Address m_originator; //!< Originator of the Packet
 };
 } // namespace dot11s
 } // namespace ns3
