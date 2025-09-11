@@ -96,12 +96,6 @@ HwmpProtocolMac::ReceiveData(Ptr<Packet> packet, const WifiMacHeader& header)
                 << source << " to " << destination << " current node " << m_protocol->GetAddress()
                 << " transmitter " << transmitter);
 
- /*    if (m_protocol->IsPruned(transmitter, m_protocol->GetAddress(), destination))
-    {
-        NS_LOG_DEBUG("HwmpProtocolMac::ReceiveData: Pruned link, dropping frame");
-
-        return false;
-    } */
 
     m_protocol->StartPrune(packet, transmitter, source, 1, destination);
 

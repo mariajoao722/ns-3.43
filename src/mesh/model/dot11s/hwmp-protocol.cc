@@ -172,14 +172,12 @@ HwmpProtocol::HwmpProtocol()
       m_unicastDataThreshold(1),
       m_doFlag(false),
       m_rfFlag(false),
-      m_firstTtlStored(false), // new
-      m_firstReceivedTtl(0),   // new
-      m_nodeTtlSum(0),         // new
-      m_nodeTtlCount(0),       // new
-      m_nodeAvgTtl(0.0),       // new
-      m_alpha(0.2),            // new
-      m_nodeVarTtl(0.0),       // new
-      m_pruneTimeout(Seconds(3)),
+      m_nodeTtlSum(0),   // new
+      m_nodeTtlCount(0), // new
+      m_nodeAvgTtl(0.0), // new
+      m_alpha(0.2),      // new
+      m_nodeVarTtl(0.0), // new
+      m_pruneTimeout(Seconds(50)),
       m_device(nullptr) // new
 {
     NS_LOG_FUNCTION(this);
@@ -248,19 +246,6 @@ HwmpProtocol::PrintParacodeMetrics() const
     NS_LOG_UNCOND("----------------------------------------");
 }
 
-void
-HwmpProtocol::PrintFirstReceivedTtl() const
-{
-    if (m_firstTtlStored)
-    {
-        NS_LOG_UNCOND("Node " << " - First received TTL: " << (uint32_t)m_firstReceivedTtl);
-    }
-    else
-    {
-        NS_LOG_UNCOND("Node " << " has not received any packet yet.");
-    }
-}
-
 // end
 
 // NEW NEW CODE
@@ -284,17 +269,6 @@ HwmpProtocol::GetActivePeerLinks() const
 
     // Now call directly into PMP
     return pmp->GetPeerLinks();
-}
-
-bool
-HwmpProtocol::IsPeerLinkActive(uint32_t interface, Mac48Address peer) const
-{
-    Ptr<PeerManagementProtocol> pmp = m_device->GetObject<PeerManagementProtocol>();
-    if (!pmp)
-    {
-        return false;
-    }
-    return pmp->IsActiveLink(interface, peer);
 }
 
 const std::map<Mac48Address, uint32_t>&
@@ -331,7 +305,7 @@ HwmpProtocol::PeerLinks()
 void
 HwmpProtocol::StartLinkMonitor(Time interval)
 {
-    NS_LOG_FUNCTION("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+    NS_LOG_FUNCTION(this);
     m_linkCheckInterval = interval;
     // schedule first run after `interval`
     m_linkCheckEvent = Simulator::Schedule(m_linkCheckInterval, &HwmpProtocol::DoLinkCheck, this);
@@ -340,7 +314,7 @@ HwmpProtocol::StartLinkMonitor(Time interval)
 void
 HwmpProtocol::DoLinkCheck()
 {
-    NS_LOG_FUNCTION("BBBBBBBBBBBBBBBBBBBBBBBBBB");
+    NS_LOG_FUNCTION(this);
     //  grab the current set of links
     std::set<Mac48Address> current;
     for (auto link : GetActivePeerLinks())
@@ -407,7 +381,7 @@ HwmpProtocol::IsPruned(Mac48Address src, Mac48Address dst, Mac48Address multicas
 std::set<Mac48Address> HwmpProtocol::m_multicastGroupNodes;
 
 void
-HwmpProtocol::SetMulticasGroupNodes(Mac48Address multicastGroupNodes)
+HwmpProtocol::SetMulticastGroupNodes(Mac48Address multicastGroupNodes)
 {
     m_multicastGroupNodes.insert(multicastGroupNodes);
     NS_LOG_DEBUG("Multicast group nodes set to: " << multicastGroupNodes);
@@ -417,6 +391,88 @@ const std::set<Mac48Address>&
 HwmpProtocol::GetMulticastGroupNodes()
 {
     return m_multicastGroupNodes;
+}
+
+void
+HwmpProtocol::EWMANode(uint8_t ttl)
+{
+    // --- EWMA update of avgTTL and sigma² ---
+    if (m_nodeTtlCount == 0)
+    {
+        // first sample
+
+        m_nodeAvgTtl = ttl; // current EWMA estimate of the mean TTL
+        m_nodeTtlCount = 1;
+        m_nodeVarTtl = 0.0;
+    }
+    else
+    {
+        double diff = ttl - m_nodeAvgTtl; // diff is simply how far this new sample sits above (if
+                                          // positive) or below (if negative) the current average.
+        m_nodeAvgTtl += m_alpha * diff;
+        // m_nodeVarTtl tracks EWMA of squared deviation
+        m_nodeVarTtl += m_alpha * (diff * diff - m_nodeVarTtl);
+        m_nodeTtlCount++;
+
+        // m_nodeAvgTtl = (1 - m_alpha) * m_nodeAvgTtl + m_alpha * ttl;
+    }
+
+    NS_LOG_INFO("[HWMP] Node " << GetAddress()
+                               << " updated node-level average TTL = " << m_nodeAvgTtl
+                               << " (sum=" << m_nodeTtlSum << ", count=" << m_nodeTtlCount << ")");
+}
+
+void
+HwmpProtocol::EWMASender(uint8_t ttl, Mac48Address sender)
+{
+    const uint32_t kMinSamplesForVariance = 3;
+    // --- update per-sender EWMA ---
+    // Usamos 'source' (endereço do remetente) como chave para identificar o nó
+    auto& metric = m_paracodeMetrics[sender];
+    // Always update count and sum
+    metric.sumTtl += ttl;
+
+    // First packet setup
+    if (metric.count == 0)
+    {
+        metric.ttl = ttl;
+        metric.count = 1;
+        metric.avgTtl = ttl;
+        metric.ewmaTtl = ttl;
+        metric.ewmaVarTtl = 0.0;
+        metric.estimatedHop = m_maxTtl - ttl;
+    }
+    else
+    {
+        // EWMA update using same logic as node-level
+        double diff = ttl - metric.ewmaTtl;
+
+        // Update mean
+        metric.ewmaTtl += m_alpha * diff;
+
+        // Update variance
+        metric.ewmaVarTtl += m_alpha * (diff * diff - metric.ewmaVarTtl);
+        metric.count++;
+    }
+
+    if (metric.count >= kMinSamplesForVariance)
+    {
+        double sigmaSender = std::sqrt(metric.ewmaVarTtl);
+    }
+
+    // log per-sender EWMA
+
+    NS_LOG_INFO("[HWMP Per-Sender Metrics] Node "
+                << GetAddress() << "Sender=" << sender << " TTL=" << (uint32_t)ttl
+                << " EWMA TTL=" << metric.ewmaTtl << " EWMA Var=" << metric.ewmaVarTtl
+                << " Count=" << metric.count);
+
+    uint8_t originalTtl = m_maxTtl;
+    uint8_t hopCount = originalTtl - ttl;
+
+    NS_LOG_INFO("[HWMP Multicast Metrics] Node "
+                << GetAddress() << " recebeu multicast de " << sender << " com TTL="
+                << (uint32_t)ttl << " (estimated hop count = " << (uint32_t)hopCount << ")");
 }
 
 // END NEW CODE
@@ -474,146 +530,12 @@ HwmpProtocol::RequestRoute(uint32_t sourceIface,
         m_stats.txBytes += packet->GetSize();
         NS_LOG_DEBUG("ENTROUUUU");
         NS_LOG_DEBUG("CURRENT NODE: " << GetAddress());
+        NS_LOG_DEBUG("TTL: " << (uint32_t)tag.GetTtl());
 
         m_RxPacketCount++;
-        // --- TTL vs Hop comparison for multicast ---
 
-        uint8_t ttl = tag.GetTtl();
-
-        // --- EWMA update of avgTTL and sigma² ---
-        if (m_nodeTtlCount == 0)
-        {
-            // first sample
-
-            m_nodeAvgTtl = ttl; // current EWMA estimate of the mean TTL
-            m_nodeTtlCount = 1;
-            m_nodeVarTtl = 0.0;
-        }
-        else
-        {
-            double diff =
-                ttl - m_nodeAvgTtl; // diff is simply how far this new sample sits above (if
-                                    // positive) or below (if negative) the current average.
-            m_nodeAvgTtl += m_alpha * diff;
-            // m_nodeVarTtl tracks EWMA of squared deviation
-            m_nodeVarTtl += m_alpha * (diff * diff - m_nodeVarTtl);
-            m_nodeTtlCount++;
-
-            // m_nodeAvgTtl = (1 - m_alpha) * m_nodeAvgTtl + m_alpha * ttl;
-        }
-
-        double sigma;
-
-        NS_LOG_INFO("[HWMP] Node "
-                    << GetAddress() << " updated node-level average TTL = " << m_nodeAvgTtl
-                    << " (sum=" << m_nodeTtlSum << ", count=" << m_nodeTtlCount << ")");
-
-        std::string relativePosition;
-        const uint32_t kMinSamplesForVariance = 3;
-
-        if (m_nodeTtlCount >= kMinSamplesForVariance)
-        {
-            // Calculate the standard deviation (sigma) for the node's TTL
-            sigma = std::sqrt(m_nodeVarTtl);
-            if (ttl > m_nodeAvgTtl + sigma)
-            {
-                relativePosition = "ACIMA"; // upstream (fewer hops)
-            }
-            else if (ttl < m_nodeAvgTtl - sigma)
-            {
-                relativePosition = "ABAIXO"; // downstream (more hops)
-            }
-            else
-            {
-                relativePosition = "MESMO NÍVEL"; // same level (within noise)
-            }
-
-            NS_LOG_INFO("[HWMP Multicast Metrics] Node "
-                        << GetAddress() << " recv TTL=" << uint32_t(ttl) << " vs avgTTL="
-                        << m_nodeAvgTtl << " (σ=" << sigma << ") → " << relativePosition);
-        }
-        else
-        {
-            NS_LOG_INFO("[HWMP Multicast Metrics] Node "
-                        << GetAddress() << " recv TTL=" << uint32_t(ttl)
-                        << " but σ is not estimated yet (samples=" << m_nodeTtlCount << ")");
-        }
-
-        // --- update per-sender EWMA ---
-        // Usamos 'source' (endereço do remetente) como chave para identificar o nó
-        Mac48Address sender = source;
-        auto& metric = m_paracodeMetrics[sender];
-        // Always update count and sum
-        metric.sumTtl += ttl;
-
-        // First packet setup
-        if (metric.count == 0)
-        {
-            metric.ttl = ttl;
-            metric.count = 1;
-            metric.avgTtl = ttl;
-            metric.ewmaTtl = ttl;
-            metric.ewmaVarTtl = 0.0;
-            metric.estimatedHop = m_maxTtl - ttl;
-        }
-        else
-        {
-            // EWMA update using same logic as node-level
-            double diff = ttl - metric.ewmaTtl;
-
-            // Update mean
-            metric.ewmaTtl += m_alpha * diff;
-
-            // Update variance
-            metric.ewmaVarTtl += m_alpha * (diff * diff - metric.ewmaVarTtl);
-            metric.count++;
-        }
-
-        if (metric.count >= kMinSamplesForVariance)
-        {
-            double sigmaSender = std::sqrt(metric.ewmaVarTtl);
-        }
-
-        // log per-sender EWMA
-
-        NS_LOG_INFO("[HWMP Per-Sender Metrics] Node "
-                    << GetAddress() << "Sender=" << sender << " TTL=" << (uint32_t)ttl
-                    << " EWMA TTL=" << metric.ewmaTtl << " EWMA Var=" << metric.ewmaVarTtl
-                    << " Count=" << metric.count);
-
-        uint8_t originalTtl = m_maxTtl;
-        uint8_t hopCount = originalTtl - ttl;
-        NS_LOG_DEBUG("ORIGINAL TTL: " << (uint32_t)originalTtl);
-
-        // Now, if this is the very first packet received by the node, store this TTL.
-        // Only store the TTL if the sender is not this node.
-        if (sender != GetAddress())
-        {
-            // Store the TTL from the very first packet received from another node.
-            if (!m_firstTtlStored)
-            {
-                m_firstReceivedTtl = ttl;
-                m_firstTtlStored = true;
-                NS_LOG_INFO("[HWMP] Node " << GetAddress() << " received its FIRST packet from "
-                                           << sender
-                                           << " with TTL = " << (uint32_t)m_firstReceivedTtl);
-            }
-        }
-        else
-        {
-            NS_LOG_DEBUG("[HWMP] Packet originated from self; ignoring first TTL storage.");
-        }
-        NS_LOG_DEBUG("FIRST TTL: " << (uint32_t)m_firstReceivedTtl);
-
-        // Armazena (ou atualiza) as métricas para o nó remetente
-
-        /* m_paracodeMetrics[sender] = {ttl, hopCount}; */
-
-        NS_LOG_INFO("[HWMP Multicast Metrics] Node "
-                    << GetAddress() << " recebeu multicast de " << sender << " com TTL="
-                    << (uint32_t)ttl << " (estimated hop count = " << (uint32_t)hopCount << ")");
-
-        // --- End of TTL vs Hop comparison for multicast ---
+        EWMANode(tag.GetTtl());
+        EWMASender(tag.GetTtl(), source);
 
         // channel IDs where we have already sent broadcast:
         std::vector<uint16_t> channels;
@@ -737,8 +659,6 @@ HwmpProtocol::RequestRoute(uint32_t sourceIface,
     return true;
 }
 
-// It's call as soon the packet arrives at the node, before is done any modification
-// calls this method on an incoming packet just before delivering it to higher layers
 bool
 HwmpProtocol::RemoveRoutingStuff(uint32_t fromIface,
                                  const Mac48Address source,
@@ -1242,6 +1162,7 @@ HwmpProtocol::SendPrune(std::vector<std::pair<Mac48Address, uint32_t>>& entries,
     auto prune_sender = m_interfaces.find(interface);
     NS_ASSERT(prune_sender != m_interfaces.end());
     prune_sender->second->SendPrune(prune, receiver);
+    m_stats.initiatedPrune++;
 }
 
 void
@@ -1259,14 +1180,41 @@ HwmpProtocol::StartPrune(Ptr<const Packet> packet,
     if (!packet->PeekPacketTag(tag))
         return;
 
-    NS_LOG_DEBUG("StartPrune: Transmitter" << transmitter << ", Source=" << source
-                                           << ", group=" << group);
-
     if (!group.IsGroup())
         return; // only prune on multicasts
 
-    auto key = std::make_pair(transmitter, group);
-    auto it = std::make_tuple(transmitter, group, GetAddress());
+    uint8_t ttl = tag.GetTtl();
+
+    double sigma = std::sqrt(m_nodeVarTtl);
+    NS_LOG_DEBUG("TTL: " << (uint32_t)ttl);
+    NS_LOG_DEBUG("Node average TTL: " << m_nodeAvgTtl << " Node variance: " << m_nodeVarTtl
+                                      << " Node sigma: " << sigma);
+
+    if (ttl < m_nodeAvgTtl - sigma)
+    {
+        NS_LOG_DEBUG("Transmitter " << transmitter << " is below the current node");
+        m_lastActivePeerAddrs[transmitter] = 0;
+    }
+    else if (ttl > m_nodeAvgTtl + sigma)
+    {
+        NS_LOG_DEBUG("Transmitter " << transmitter << " is above the current node");
+        m_lastActivePeerAddrs[transmitter] = 1;
+    }
+    else
+    {
+        NS_LOG_DEBUG("Transmitter " << transmitter << " is at the same level");
+        m_lastActivePeerAddrs[transmitter] = 2;
+    }
+
+    // print the m_lastActivePeerAddrs vector
+    NS_LOG_DEBUG("Last active peer addresses1:" << GetAddress());
+    for (const auto& addr : m_lastActivePeerAddrs)
+    {
+        NS_LOG_DEBUG("Address: " << addr);
+    }
+    NS_LOG_DEBUG("END LAST ACTIVE PEER ADDRESSES");
+
+    auto key = std::make_pair(source, group);
 
     // If it’s the very first packet, just mark it seen
     if (!m_seenFirstMulticast[key])
@@ -1275,35 +1223,12 @@ HwmpProtocol::StartPrune(Ptr<const Packet> packet,
         return;
     }
 
-    // Otherwise, it’s packet #2 or later → prune
-
-    // Check if the Transmitter is a downstream or  upstream node
-    auto ttl = tag.GetTtl(); // Get the TTL from the tag
-    if (ttl < m_nodeAvgTtl + std::sqrt(m_nodeVarTtl))
-    {
-        NS_LOG_DEBUG("Transmitter " << transmitter << " is bellow the current node; ");
-        m_lastActivePeerAddrs[transmitter] = 0;
-        return;
-    }
-    else if (ttl > m_nodeAvgTtl + std::sqrt(m_nodeVarTtl))
-    {
-        NS_LOG_DEBUG("Transmitter " << transmitter << " is above the current node; ");
-        m_lastActivePeerAddrs[transmitter] = 1;
-    }
-    else if (ttl == m_nodeAvgTtl + std::sqrt(m_nodeVarTtl))
-    {
-        NS_LOG_DEBUG("Transmitter " << transmitter << " is at the same level; ");
-        m_lastActivePeerAddrs[transmitter] = 2;
-    }
-
     if (IsPruned(transmitter, GetAddress(), group))
     {
         NS_LOG_DEBUG("Prune active for " << transmitter << " -> " << GetAddress());
     }
     else
     {
-        // Fazer só este check quando recebo uma mensagem de prune, ou seja, na função receive
-        // prune???
         auto g = GetMulticastGroupNodes();
         // print g
         NS_LOG_DEBUG("Multicast group nodes: ");
@@ -1311,35 +1236,91 @@ HwmpProtocol::StartPrune(Ptr<const Packet> packet,
         {
             NS_LOG_DEBUG("Node: " << node);
         }
-        // if transmitter is in the multicast group, we do not prune
-        if (g.find(transmitter) != g.end())
-        {
-            NS_LOG_DEBUG("Transmitter " << transmitter
-                                        << " is in the multicast group; not pruning.");
-            return;
-        }
-        else if (g.find(transmitter) == g.end() &&
-                 g.find(GetAddress()) ==
-                     g.end()) // If the transmitter is not in the multicast group, we can prune it
-        {
-            NS_LOG_DEBUG("Transmitter " << transmitter
-                                        << " is not in the multicast group; pruning.");
 
-            std::vector<std::pair<Mac48Address, uint32_t>> entries;
-            entries.emplace_back(GetAddress(), PRUNE_REASON_NOT_INTERESTED);
-            SendPrune(entries,     // entries
-                      transmitter, // receiver
-                      interfaceIndex,
-                      group,
-                      source, // originator
-                      1);
+        auto peerlinks = GetLastActivePeerAddresses();
+        uint16_t peerDown = 0;
+        for (const auto& entry : peerlinks)
+        {
+            Mac48Address peer = entry.first;
+            if (entry.second == 0) // peer is bellow
+            {
+                peerDown++;
+            }
+        }
+
+        if (peerDown == 0)
+        {
+            if (g.find(GetAddress()) != g.end()) // if is in the multicast group, we do not prune
+            {
+                NS_LOG_DEBUG("Node " << GetAddress() << " is in the multicast group; not pruning.");
+                return;
+            }
+            else
+            {
+                NS_LOG_DEBUG("Node " << GetAddress() << " is not in the multicast group; pruning.");
+                std::vector<std::pair<Mac48Address, uint32_t>> entries;
+                entries.emplace_back(GetAddress(), PRUNE_REASON_NOT_INTERESTED);
+                SendPrune(entries,     // entries
+                          transmitter, // receiver
+                          interfaceIndex,
+                          group,
+                          source, // originator
+                          1);
+                NS_LOG_INFO("Auto-pruning " << transmitter << " for flow Node0" << " → " << group);
+            }
+        }
+        else
+        {
+            auto count = 0;
+            // Check if all peers below are pruned for this multicast group
+            for (const auto& entry : peerlinks)
+            {
+                Mac48Address peer = entry.first;
+                if (entry.second == 0) // peer is bellow
+                {
+                    if (IsPruned(GetAddress(), peer, group))
+                    {
+                        NS_LOG_DEBUG("Peer " << peer << " is pruned for group " << group);
+                        count++;
+                    }
+                }
+            }
+            if (count == peerDown)
+            {
+                NS_LOG_DEBUG("All peers below are pruned for group " << group);
+                if (g.find(GetAddress()) !=
+                    g.end()) // if is in the multicast group, we do not prune
+                {
+                    NS_LOG_DEBUG("Node " << GetAddress()
+                                         << " is in the multicast group; not pruning.");
+                    return;
+                }
+                else
+                {
+                    NS_LOG_DEBUG("Node " << GetAddress()
+                                         << " is not in the multicast group; pruning.");
+                    std::vector<std::pair<Mac48Address, uint32_t>> entries;
+                    entries.emplace_back(GetAddress(), PRUNE_REASON_NOT_INTERESTED);
+                    SendPrune(entries,     // entries
+                              transmitter, // receiver
+                              interfaceIndex,
+                              group,
+                              source, // originator
+                              1);
+                    NS_LOG_INFO("Auto-pruning " << transmitter << " for flow Node0" << " → "
+                                                << group);
+                }
+            }
+            else
+            {
+                NS_LOG_DEBUG("Not all peers below are pruned for group " << group
+                                                                         << "; not pruning.");
+                return;
+            }
         }
     }
-
-    NS_LOG_INFO("Auto-pruning " << transmitter << " for flow Node0" << " → " << group);
 }
 
-// end
 bool
 HwmpProtocol::Install(Ptr<MeshPointDevice> mp)
 {
@@ -1406,24 +1387,14 @@ HwmpProtocol::DropDataFrame(uint32_t seqno, Mac48Address source)
         NS_LOG_DEBUG("Dropping seqno " << seqno << "; from self");
         return true;
     }
-    // const auto i = m_lastDataSeqno.find(source);
+
     std::map<Mac48Address, Ptr<LruGroupSeqNo>, std::less<Mac48Address>>::const_iterator i =
         m_lastDataSeqno.find(source);
     if (i == m_lastDataSeqno.end())
     {
-        // m_lastDataSeqno[source] = seqno;
         m_lastDataSeqno[source] = CreateObject<LruGroupSeqNo>();
     }
-    /*     else
-        {
-            if ((int32_t)(i->second - seqno) >= 0)
-            {
-                NS_LOG_DEBUG("Dropping seqno " << seqno << "; stale frame");
-                return true;
-            }
-            m_lastDataSeqno[source] = seqno;
-        }
-        return false; */
+
     return m_lastDataSeqno[source]->CheckSeen(seqno);
 }
 
@@ -1853,7 +1824,8 @@ HwmpProtocol::Statistics::Statistics()
       totalDropped(0),
       initiatedPreq(0),
       initiatedPrep(0),
-      initiatedPerr(0)
+      initiatedPerr(0),
+      initiatedPrune(0)
 {
 }
 
@@ -1886,7 +1858,10 @@ HwmpProtocol::Statistics::Print(std::ostream& os) const
        << initiatedPrep
        << "\" "
           "initiatedPerr=\""
-       << initiatedPerr << "\"/>" << std::endl;
+       << initiatedPerr
+       << "\" "
+          "initiatedPrune=\""
+       << initiatedPrune << "\"/>" << std::endl;
 }
 
 void

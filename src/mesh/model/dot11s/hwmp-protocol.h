@@ -218,24 +218,11 @@ class HwmpProtocol : public MeshL2RoutingProtocol
     // O nó atual é o nó que está executando o código
     std::map<Mac48Address, NodeMetric> m_paracodeMetrics;
 
-    // To store the TTL of the very first packet received by this node
-    bool m_firstTtlStored;
-
-    // To store that TTL value
-    uint8_t m_firstReceivedTtl;
-
-    void PrintFirstReceivedTtl() const;
-
-    // Set of senders that have been pruned.
-    std::set<Mac48Address> m_prunedNodes;
-
     // end
 
     // NEW NEW CODE
     //  A couple of convenience wrappers you can add:
     std::vector<Ptr<PeerLink>> GetActivePeerLinks() const;
-
-    bool IsPeerLinkActive(uint32_t interface, Mac48Address peer) const;
 
     // This is normally set up when you install the mesh device on a node
     void SetDevice(Ptr<MeshPointDevice> device);
@@ -243,13 +230,10 @@ class HwmpProtocol : public MeshL2RoutingProtocol
     /// Return the peers we saw when we last called RequestRoute()
     const std::map<Mac48Address, uint32_t>& GetLastActivePeerAddresses() const;
 
-    /// Return the status of a specific peer address
-    uint32_t GetPeerStatus(Mac48Address peer) const;
-
     /// Start a periodic check every `interval` seconds
     void StartLinkMonitor(Time interval);
 
-    void SetMulticasGroupNodes(Mac48Address multicastGroupNodes);
+    void SetMulticastGroupNodes(Mac48Address multicastGroupNodes);
     // accessor for everyone
     static const std::set<Mac48Address>& GetMulticastGroupNodes();
     // End of new code
@@ -280,7 +264,11 @@ class HwmpProtocol : public MeshL2RoutingProtocol
     double m_nodeAvgTtl;     // current running average TTL, EWMA of observed TTLs
     double m_alpha;          // EWMA weight (e.g. 0.1)
     double m_nodeVarTtl;     // EWMA of squared deviations (variance)
+    void EWMANode(uint8_t ttl);
+    void EWMASender(uint8_t ttl, Mac48Address sender);
 
+    // Map to store prune entries
+    // key = (source, destination, multicastGroup)
     std::map<std::tuple<Mac48Address, Mac48Address, Mac48Address>, Time> m_pruneTable;
     Time m_pruneTimeout;  // soft‐state timeout for prune entries
     EventId m_pruneEvent; // event handle for our recurring prune task
@@ -622,6 +610,7 @@ class HwmpProtocol : public MeshL2RoutingProtocol
         uint16_t initiatedPreq; ///< initiated PREQ
         uint16_t initiatedPrep; ///< initiated PREP
         uint16_t initiatedPerr; ///< initiated PERR
+        uint16_t initiatedPrune; ///< initiated PRUNE
 
         /**
          * Print function
