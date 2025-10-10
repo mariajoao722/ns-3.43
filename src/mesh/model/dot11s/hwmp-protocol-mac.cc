@@ -85,19 +85,25 @@ HwmpProtocolMac::ReceiveData(Ptr<Packet> packet, const WifiMacHeader& header)
     tag.SetSeqno(meshHdr.GetMeshSeqno());
     tag.SetTtl(meshHdr.GetMeshTtl());
     packet->AddPacketTag(tag);
+    NS_LOG_DEBUG("COMEÇA AQUI");
+    NS_LOG_DEBUG("HwmpProtocolMac::ReceiveData: Seqno " << tag.GetSeqno());
+    NS_LOG_INFO("HwmpProtocolMac::ReceiveData1: Received data frame from "
+                << source << " to " << destination << " current node " << m_protocol->GetAddress()
+                << " transmitter " << transmitter);
 
     if (((destination.IsGroup()) && (m_protocol->DropDataFrame(meshHdr.GetMeshSeqno(), source))))
     {
         NS_LOG_DEBUG("Dropping frame; source " << source << " dest " << destination << " seqno "
                                                << meshHdr.GetMeshSeqno());
+        m_protocol->StartPrune(packet, transmitter, source, 1, destination, false);
+
         return false;
     }
     NS_LOG_INFO("HwmpProtocolMac::ReceiveData: Received data frame from "
                 << source << " to " << destination << " current node " << m_protocol->GetAddress()
                 << " transmitter " << transmitter);
 
-
-    m_protocol->StartPrune(packet, transmitter, source, 1, destination);
+    m_protocol->StartPrune(packet, transmitter, source, 1, destination, true);
 
     return true;
 }

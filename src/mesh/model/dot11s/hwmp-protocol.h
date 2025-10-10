@@ -193,33 +193,6 @@ class HwmpProtocol : public MeshL2RoutingProtocol
      */
     Ptr<HwmpRtable> GetRoutingTable() const;
 
-    // new
-
-    void PrintParacodeMetrics() const;
-
-    //  Estrutura para guardar as métricas dos nós que enviam paracodes
-    struct NodeMetric
-    {
-        uint8_t ttl;          // TTL recebido do pacote
-        uint8_t estimatedHop; // Estimativa de saltos (m_maxTtl - ttl)
-        uint64_t sumTtl;
-        uint32_t count;
-        double avgTtl;
-        double ewmaTtl;    // per-sender EWMA of TTL
-        double ewmaVarTtl; // per-sender EWMA of variance of TTL
-    };
-
-    // Mapa para armazenar as métricas dos nós que enviam paracodes
-    // A chave é o endereço MAC do nó remetente
-    // O valor é a estrutura NodeMetric
-    // que contém o TTL e a estimativa de saltos
-    // O mapa é inicializado com o endereço MAC do nó atual
-    // e as métricas correspondentes
-    // O nó atual é o nó que está executando o código
-    std::map<Mac48Address, NodeMetric> m_paracodeMetrics;
-
-    // end
-
     // NEW NEW CODE
     //  A couple of convenience wrappers you can add:
     std::vector<Ptr<PeerLink>> GetActivePeerLinks() const;
@@ -236,6 +209,9 @@ class HwmpProtocol : public MeshL2RoutingProtocol
     void SetMulticastGroupNodes(Mac48Address multicastGroupNodes);
     // accessor for everyone
     static const std::set<Mac48Address>& GetMulticastGroupNodes();
+
+
+
     // End of new code
 
   private:
@@ -269,7 +245,7 @@ class HwmpProtocol : public MeshL2RoutingProtocol
 
     // Map to store prune entries
     // key = (source, destination, multicastGroup)
-    std::map<std::tuple<Mac48Address, Mac48Address, Mac48Address>, Time> m_pruneTable;
+    static std::map<std::tuple<Mac48Address, Mac48Address, Mac48Address>, Time> m_pruneTable;
     Time m_pruneTimeout;  // soft‐state timeout for prune entries
     EventId m_pruneEvent; // event handle for our recurring prune task
 
@@ -285,14 +261,15 @@ class HwmpProtocol : public MeshL2RoutingProtocol
                     Mac48Address transmitter,
                     Mac48Address source,
                     uint32_t interfaceIndex,
-                    Mac48Address group);
+                    Mac48Address group,
+                    bool use);
 
-    void ExpirePruneEntry(Mac48Address src, Mac48Address dst, Mac48Address multicastGroup);
-
+    static void ExpirePruneEntry(Mac48Address src, Mac48Address dst, Mac48Address multicastGroup);
 
     void PeerLinks();
 
     uint32_t m_RxPacketCount = 0;
+    uint32_t m_TxPacketCount = 0;
     // End of new code
 
     void DoInitialize() override;
@@ -601,15 +578,15 @@ class HwmpProtocol : public MeshL2RoutingProtocol
     /// Statistics structure
     struct Statistics
     {
-        uint16_t txUnicast;     ///< transmit unicast
-        uint16_t txBroadcast;   ///< transmit broadcast
-        uint32_t txBytes;       ///< transmit bytes
-        uint16_t droppedTtl;    ///< dropped TTL
-        uint16_t totalQueued;   ///< total queued
-        uint16_t totalDropped;  ///< total dropped
-        uint16_t initiatedPreq; ///< initiated PREQ
-        uint16_t initiatedPrep; ///< initiated PREP
-        uint16_t initiatedPerr; ///< initiated PERR
+        uint16_t txUnicast;      ///< transmit unicast
+        uint16_t txBroadcast;    ///< transmit broadcast
+        uint32_t txBytes;        ///< transmit bytes
+        uint16_t droppedTtl;     ///< dropped TTL
+        uint16_t totalQueued;    ///< total queued
+        uint16_t totalDropped;   ///< total dropped
+        uint16_t initiatedPreq;  ///< initiated PREQ
+        uint16_t initiatedPrep;  ///< initiated PREP
+        uint16_t initiatedPerr;  ///< initiated PERR
         uint16_t initiatedPrune; ///< initiated PRUNE
 
         /**
