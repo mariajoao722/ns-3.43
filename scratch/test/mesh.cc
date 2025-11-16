@@ -449,7 +449,7 @@ MeshTest::InstallApplication()
             Ptr<Socket> recvSink =
                 Socket::CreateSocket(nodes.Get(i), UdpSocketFactory::GetTypeId());
             // Define the IP address and port for the socket to listen on
-            InetSocketAddress local = InetSocketAddress(Ipv4Address::GetAny(), multicastPort);
+            InetSocketAddress local = InetSocketAddress("10.1.1.1", multicastPort);
 
             // Allow the socket to receive broadcast packets
             recvSink->SetAllowBroadcast(true);
